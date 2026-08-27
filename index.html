@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hay Day Master Dashboard - Multi-Istanza Animata</title>
+    <title>Hay Day Master Dashboard - Full Animated</title>
+    <!-- Script Ufficiale Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
     
@@ -34,12 +35,12 @@
             background-image: radial-gradient(circle at 50% 0%, #2b1810 0%, #120c08 100%);
             color: var(--text-main);
             padding: 14px;
-            padding-bottom: 45px;
+            padding-bottom: 50px;
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        /* Intestazione con animazione di discesa */
+        /* Intestazione con animazione d'ingresso */
         .header {
             text-align: center;
             padding: 18px 12px;
@@ -66,22 +67,23 @@
             font-weight: 600;
         }
 
-        /* Titoli Sezione Istanza con dissolvenza */
+        /* Titoli Sezione Istanza */
         .instance-title {
             font-size: 14px;
             font-weight: 900;
             color: var(--accent-gold);
             background: rgba(243, 156, 18, 0.1);
             border: 1px solid rgba(243, 156, 18, 0.3);
-            padding: 8px 12px;
+            padding: 10px 14px;
             border-radius: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin: 24px 0 12px 0;
+            margin: 28px 0 12px 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
             animation: fadeIn 0.8s ease-out both;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
         .instance-title.inst2 {
@@ -94,9 +96,10 @@
             font-size: 10px;
             background: var(--accent-gold);
             color: #120c08;
-            padding: 2px 8px;
+            padding: 3px 8px;
             border-radius: 6px;
             font-weight: 900;
+            animation: pulseBadge 2s infinite;
         }
 
         .instance-badge.blue {
@@ -108,32 +111,37 @@
         .card-list {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
-        /* Card con animazione a cascata (Staggered Fade In) */
+        /* Card con animazione a cascata */
         .card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 16px;
-            padding: 14px;
+            padding: 12px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s;
-            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s, box-shadow 0.2s;
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         .card:active {
             transform: scale(0.97);
             border-color: var(--accent-gold);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
         }
 
         /* Ritardi sequenziali per l'entrata delle card */
-        .card:nth-child(1) { animation-delay: 0.15s; }
-        .card:nth-child(2) { animation-delay: 0.25s; }
-        .card:nth-child(3) { animation-delay: 0.35s; }
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.15s; }
+        .card:nth-child(3) { animation-delay: 0.2s; }
+        .card:nth-child(4) { animation-delay: 0.25s; }
+        .card:nth-child(5) { animation-delay: 0.3s; }
+        .card:nth-child(6) { animation-delay: 0.35s; }
+        .card:nth-child(7) { animation-delay: 0.4s; }
 
         .card-info {
             display: flex;
@@ -143,11 +151,12 @@
             min-width: 0;
         }
 
+        /* Icona con animazione al tocco/hover */
         .card-icon {
-            font-size: 28px;
+            font-size: 26px;
             background: rgba(0, 0, 0, 0.3);
-            min-width: 48px;
-            height: 48px;
+            min-width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -157,20 +166,20 @@
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .card:hover .card-icon {
-            transform: scale(1.1) rotate(5deg);
+        .card:active .card-icon {
+            transform: scale(1.2) rotate(10deg);
         }
 
         .card-details {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
             flex: 1;
             min-width: 0;
         }
 
         .card-details h3 {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 800;
             color: var(--text-main);
             white-space: nowrap;
@@ -178,7 +187,7 @@
             text-overflow: ellipsis;
         }
 
-        /* Tag di Stato */
+        /* Tag di Stato con bagliore */
         .status-tag {
             font-size: 11px;
             font-weight: 700;
@@ -195,10 +204,10 @@
         .status-tag.warning { color: #f39c12; text-shadow: 0 0 8px rgba(243, 156, 18, 0.4); }
         .status-tag.idle { color: #95a5a6; }
 
-        /* Pulsanti Azione Rimbalzanti */
+        /* Pulsanti Azione */
         .btn {
             border: none;
-            padding: 10px 16px;
+            padding: 9px 14px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 900;
@@ -220,7 +229,7 @@
         .btn-orange { background: linear-gradient(180deg, #f39c12 0%, #d35400 100%); border: 1px solid #a04000; }
         .btn-blue { background: linear-gradient(180deg, #3498db 0%, #2980b9 100%); border: 1px solid #1a5276; }
 
-        /* Notifica Toast Animata */
+        /* Notifica Toast Animata dall'alto/basso */
         #toast {
             visibility: hidden;
             min-width: 250px;
@@ -232,7 +241,7 @@
             position: fixed;
             z-index: 100;
             left: 50%;
-            bottom: -50px;
+            bottom: -60px;
             transform: translateX(-50%);
             font-weight: 900;
             font-size: 12px;
@@ -248,7 +257,7 @@
             opacity: 1;
         }
 
-        /* Animazioni Keyframes */
+        /* Keyframes Animazioni Vivaci */
         @keyframes fadeInDown {
             from { opacity: 0; transform: translateY(-25px); }
             to { opacity: 1; transform: translateY(0); }
@@ -264,106 +273,221 @@
             to { opacity: 1; }
         }
 
-        /* Animazione pulsazione testo di stato quando si clicca */
+        @keyframes pulseBadge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); filter: brightness(1.2); }
+        }
+
+        /* Animazione testo di stato quando viene aggiornato */
         .pulse-text {
-            animation: pulseState 0.4s ease;
+            animation: pulseState 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         @keyframes pulseState {
-            0% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.08); color: #fff; }
+            0% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.1); color: #fff; text-shadow: 0 0 12px #2ecc71; }
             100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Header Principale -->
     <div class="header">
         <h1>🌾 HAY DAY MASTER 🌾</h1>
-        <p>Controllo Multi-Istanza Animato</p>
+        <p>Dashboard Multi-Istanza & Animata</p>
     </div>
 
+    <!-- ========================================== -->
+    <!--          ISTANZA 1: MAMBO 1                -->
+    <!-- ========================================== -->
     <div class="instance-title">
         <span>⚙️ Istanza 1 (Mambo 1)</span>
         <span class="instance-badge">ATTIVA</span>
     </div>
     
     <div class="card-list">
+        <!-- Impastatrice -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🥣</div>
                 <div class="card-details">
-                    <h3>Impastatrice (Inst 1)</h3>
+                    <h3>Impastatrice</h3>
                     <div class="status-tag warning" id="i1-impastatrice">⚠️ In attesa di ingredienti</div>
                 </div>
             </div>
-            <button class="btn btn-orange" onclick="eseguiAzione('Istanza 1 - Impastatrice', 'i1-impastatrice', 'Avviata')">Prepara</button>
+            <button class="btn btn-orange" onclick="eseguiAzione('Inst 1 - Impastatrice', 'i1-impastatrice', 'Avviata')">Prepara</button>
         </div>
 
+        <!-- Forno -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🥖</div>
                 <div class="card-details">
-                    <h3>Forno (Inst 1)</h3>
+                    <h3>Forno (Pane)</h3>
                     <div class="status-tag active" id="i1-forno">🟢 Produzione avviata</div>
                 </div>
             </div>
-            <button class="btn btn-green" onclick="eseguiAzione('Istanza 1 - Forno', 'i1-forno', 'Pronto')">Raccogli</button>
+            <button class="btn btn-green" onclick="eseguiAzione('Inst 1 - Forno', 'i1-forno', 'Pronto')">Raccogli</button>
         </div>
 
+        <!-- Macchina della Pasta -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🍝</div>
+                <div class="card-details">
+                    <h3>Macchina Pasta</h3>
+                    <div class="status-tag warning" id="i1-pasta">⚠️ Non trovata sulla mappa</div>
+                </div>
+            </div>
+            <button class="btn btn-orange" onclick="eseguiAzione('Inst 1 - Macchina Pasta', 'i1-pasta', 'Ricerca')">Cerca</button>
+        </div>
+
+        <!-- Caseificio -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🧀</div>
+                <div class="card-details">
+                    <h3>Caseificio</h3>
+                    <div class="status-tag idle" id="i1-caseificio">⚪ Inattivo</div>
+                </div>
+            </div>
+            <button class="btn btn-blue" onclick="eseguiAzione('Inst 1 - Caseificio', 'i1-caseificio', 'Avviato')">Avvia</button>
+        </div>
+
+        <!-- Barbecue -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🍖</div>
+                <div class="card-details">
+                    <h3>Barbecue</h3>
+                    <div class="status-tag warning" id="i1-barbecue">⚠️ Non trovato sulla mappa</div>
+                </div>
+            </div>
+            <button class="btn btn-orange" onclick="eseguiAzione('Inst 1 - Barbecue', 'i1-barbecue', 'Ricerca')">Cerca</button>
+        </div>
+
+        <!-- Visitatori -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🚶</div>
+                <div class="card-details">
+                    <h3>Visitatori</h3>
+                    <div class="status-tag idle" id="i1-visitatori">💤 Nessun visitatore attivo</div>
+                </div>
+            </div>
+            <button class="btn btn-blue" onclick="eseguiAzione('Inst 1 - Visitatori', 'i1-visitatori', 'Controllati')">Aggiorna</button>
+        </div>
+
+        <!-- Grano -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🌾</div>
                 <div class="card-details">
-                    <h3>Grano (Inst 1)</h3>
+                    <h3>Grano</h3>
                     <div class="status-tag active" id="i1-grano">✅ Raccolto completato</div>
                 </div>
             </div>
-            <button class="btn btn-green" onclick="eseguiAzione('Istanza 1 - Grano', 'i1-grano', 'Seminato')">Riattiva</button>
+            <button class="btn btn-green" onclick="eseguiAzione('Inst 1 - Grano', 'i1-grano', 'Seminato')">Riattiva</button>
         </div>
     </div>
 
 
+    <!-- ========================================== -->
+    <!--         ISTANZA 2: MAMBO 2.0               -->
+    <!-- ========================================== -->
     <div class="instance-title inst2">
         <span>⚙️ Istanza 2 (Mambo 2.0)</span>
         <span class="instance-badge blue">ATTIVA</span>
     </div>
     
     <div class="card-list">
+        <!-- Impastatrice -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🥣</div>
                 <div class="card-details">
-                    <h3>Impastatrice (Inst 2)</h3>
+                    <h3>Impastatrice</h3>
                     <div class="status-tag warning" id="i2-impastatrice">⚠️ In attesa di ingredienti</div>
                 </div>
             </div>
-            <button class="btn btn-orange" onclick="eseguiAzione('Istanza 2 - Impastatrice', 'i2-impastatrice', 'Avviata')">Prepara</button>
+            <button class="btn btn-orange" onclick="eseguiAzione('Inst 2 - Impastatrice', 'i2-impastatrice', 'Avviata')">Prepara</button>
         </div>
 
+        <!-- Forno -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🥖</div>
                 <div class="card-details">
-                    <h3>Forno (Inst 2)</h3>
+                    <h3>Forno (Pane)</h3>
                     <div class="status-tag active" id="i2-forno">🟢 Produzione avviata</div>
                 </div>
             </div>
-            <button class="btn btn-green" onclick="eseguiAzione('Istanza 2 - Forno', 'i2-forno', 'Pronto')">Raccogli</button>
+            <button class="btn btn-green" onclick="eseguiAzione('Inst 2 - Forno', 'i2-forno', 'Pronto')">Raccogli</button>
         </div>
 
+        <!-- Macchina della Pasta -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🍝</div>
+                <div class="card-details">
+                    <h3>Macchina Pasta</h3>
+                    <div class="status-tag warning" id="i2-pasta">⚠️ Non trovata sulla mappa</div>
+                </div>
+            </div>
+            <button class="btn btn-orange" onclick="eseguiAzione('Inst 2 - Macchina Pasta', 'i2-pasta', 'Ricerca')">Cerca</button>
+        </div>
+
+        <!-- Caseificio -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🧀</div>
+                <div class="card-details">
+                    <h3>Caseificio</h3>
+                    <div class="status-tag idle" id="i2-caseificio">⚪ Inattivo</div>
+                </div>
+            </div>
+            <button class="btn btn-blue" onclick="eseguiAzione('Inst 2 - Caseificio', 'i2-caseificio', 'Avviato')">Avvia</button>
+        </div>
+
+        <!-- Barbecue -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🍖</div>
+                <div class="card-details">
+                    <h3>Barbecue</h3>
+                    <div class="status-tag warning" id="i2-barbecue">⚠️ Non trovato sulla mappa</div>
+                </div>
+            </div>
+            <button class="btn btn-orange" onclick="eseguiAzione('Inst 2 - Barbecue', 'i2-barbecue', 'Ricerca')">Cerca</button>
+        </div>
+
+        <!-- Visitatori -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🚶</div>
+                <div class="card-details">
+                    <h3>Visitatori</h3>
+                    <div class="status-tag idle" id="i2-visitatori">💤 Nessun visitatore attivo</div>
+                </div>
+            </div>
+            <button class="btn btn-blue" onclick="eseguiAzione('Inst 2 - Visitatori', 'i2-visitatori', 'Controllati')">Aggiorna</button>
+        </div>
+
+        <!-- Grano -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🌾</div>
                 <div class="card-details">
-                    <h3>Grano (Inst 2)</h3>
+                    <h3>Grano</h3>
                     <div class="status-tag active" id="i2-grano">✅ Raccolto completato</div>
                 </div>
             </div>
-            <button class="btn btn-green" onclick="eseguiAzione('Istanza 2 - Grano', 'i2-grano', 'Seminato')">Riattiva</button>
+            <button class="btn btn-green" onclick="eseguiAzione('Inst 2 - Grano', 'i2-grano', 'Seminato')">Riattiva</button>
         </div>
     </div>
 
+    <!-- Elemento Toast -->
     <div id="toast">Azione eseguita!</div>
 
     <script>
@@ -375,6 +499,7 @@
         }
 
         function eseguiAzione(nomeStruttura, elementId, nuovoStato) {
+            // Vibrazione Telegram se supportata
             if (tg && tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('medium');
             }
@@ -384,6 +509,7 @@
                 statusElem.className = "status-tag active pulse-text";
                 statusElem.innerHTML = "🟢 " + nuovoStato;
                 
+                // Rimuove la classe d'animazione per poterla riattivare al prossimo click
                 setTimeout(() => {
                     statusElem.classList.remove('pulse-text');
                 }, 400);
