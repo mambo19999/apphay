@@ -6,17 +6,17 @@
     <title>Hay Day Master Dashboard</title>
     <!-- Script Ufficiale Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-dark: #1b120c;
-            --card-bg: linear-gradient(145deg, #3d291a, #2b1c11);
-            --card-border: #6e4726;
+            --bg-dark: #120c08;
+            --card-bg: linear-gradient(145deg, rgba(50, 33, 22, 0.95), rgba(30, 19, 11, 0.98));
+            --card-border: rgba(139, 90, 43, 0.5);
             --accent-gold: #f39c12;
-            --accent-green: #27ae60;
-            --accent-orange: #d35400;
-            --accent-blue: #2980b9;
+            --accent-green: #2ecc71;
+            --accent-orange: #e67e22;
+            --accent-blue: #3498db;
             --text-main: #fff3e0;
             --text-sub: #bcaaa4;
         }
@@ -31,88 +31,47 @@
 
         body {
             background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 0%, #2b1810 0%, #120c08 100%);
             color: var(--text-main);
-            padding: 12px;
-            padding-bottom: 30px;
+            padding: 14px;
+            padding-bottom: 40px;
+            min-height: 100vh;
         }
 
-        /* Intestazione */
+        /* Intestazione Moderna */
         .header {
             text-align: center;
-            padding: 15px 10px;
-            background: linear-gradient(180deg, #4a321f 0%, #2b1c11 100%);
+            padding: 16px 12px;
+            background: linear-gradient(180deg, #4a321f 0%, #22140b 100%);
             border: 2px solid var(--accent-gold);
-            border-radius: 16px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border-radius: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
         }
 
         .header h1 {
-            font-size: 20px;
+            font-size: 21px;
             font-weight: 900;
             color: var(--accent-gold);
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            letter-spacing: 0.5px;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.8);
+            letter-spacing: 0.8px;
         }
 
         .header p {
             font-size: 12px;
             color: var(--text-sub);
-            margin-top: 2px;
-        }
-
-        /* Widget Scorte Silo / Granaio */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 18px;
-        }
-
-        .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 10px;
-            text-align: center;
-        }
-
-        .stat-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-sub);
-            text-transform: uppercase;
-        }
-
-        .stat-value {
-            font-size: 16px;
-            font-weight: 900;
-            color: var(--accent-gold);
-            margin: 3px 0;
-        }
-
-        .progress-bar {
-            background: #1a1009;
-            border-radius: 8px;
-            height: 8px;
-            overflow: hidden;
-            border: 1px solid #4a321f;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #f39c12, #27ae60);
-            border-radius: 8px;
+            margin-top: 4px;
+            font-weight: 600;
         }
 
         /* Titoli Sezione */
         .section-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
             color: var(--accent-gold);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 15px 0 8px 4px;
+            letter-spacing: 1.2px;
+            margin: 18px 0 10px 4px;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -122,73 +81,94 @@
         .card-list {
             display: flex;
             flex-direction: column;
-            gap: 9px;
+            gap: 12px;
         }
 
+        /* Card Fabbriche e Azioni */
         .card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 14px;
-            padding: 12px;
+            border-radius: 16px;
+            padding: 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
         }
 
         .card-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
+            flex: 1;
+            min-width: 0;
         }
 
         .card-icon {
-            font-size: 26px;
-            background: rgba(0,0,0,0.2);
-            width: 44px;
-            height: 44px;
+            font-size: 28px;
+            background: rgba(0, 0, 0, 0.3);
+            min-width: 48px;
+            height: 48px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .card-details {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex: 1;
+            min-width: 0;
         }
 
         .card-details h3 {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
             color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
+        /* Tag di Stato Dettagliato */
         .status-tag {
             font-size: 11px;
             font-weight: 700;
-            margin-top: 2px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .status-tag.active { color: #2ecc71; }
-        .status-tag.warning { color: #e67e22; }
+        .status-tag.warning { color: #f39c12; }
         .status-tag.idle { color: #95a5a6; }
 
         /* Pulsanti Azione */
         .btn {
             border: none;
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 12px;
+            padding: 9px 16px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 900;
             color: #fff;
             cursor: pointer;
-            transition: all 0.15s ease;
-            box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+            transition: all 0.1s ease;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.4);
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
         }
 
         .btn:active {
-            transform: translateY(2px);
+            transform: translateY(3px);
             box-shadow: 0 1px 0 rgba(0,0,0,0.4);
         }
 
@@ -198,7 +178,7 @@
         }
 
         .btn-orange {
-            background: linear-gradient(180deg, #e67e22 0%, #d35400 100%);
+            background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
             border: 1px solid #a04000;
         }
 
@@ -207,23 +187,23 @@
             border: 1px solid #1a5276;
         }
 
-        /* Notifica Toast Interna */
+        /* Notifica Toast */
         #toast {
             visibility: hidden;
-            min-width: 220px;
-            background-color: #f39c12;
-            color: #1b120c;
+            min-width: 240px;
+            background-color: var(--accent-gold);
+            color: #120c08;
             text-align: center;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 10px;
+            padding: 12px;
             position: fixed;
             z-index: 100;
             left: 50%;
-            bottom: 20px;
+            bottom: 25px;
             transform: translateX(-50%);
             font-weight: 900;
             font-size: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.7);
         }
 
         #toast.show {
@@ -231,37 +211,23 @@
             animation: fadein 0.3s, fadeout 0.3s 1.7s;
         }
 
-        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 20px; opacity: 1; } }
-        @keyframes fadeout { from { bottom: 20px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 25px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 25px; opacity: 1; } to { bottom: 0; opacity: 0; } }
     </style>
 </head>
 <body>
 
     <!-- Header Principale -->
     <div class="header">
-        <h1>🌾 HAY DAY DASHBOARD 🌾</h1>
-        <p>Gestione Fattoria Principale</p>
-    </div>
-
-    <!-- Scorte & Silo -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-title">🌾 Silo Capienza</div>
-            <div class="stat-value">145 / 200</div>
-            <div class="progress-bar"><div class="progress-fill" style="width: 72%;"></div></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">📦 Granaio Capienza</div>
-            <div class="stat-value">180 / 200</div>
-            <div class="progress-bar"><div class="progress-fill" style="width: 90%;"></div></div>
-        </div>
+        <h1>🌾 HAY DAY MASTER 🌾</h1>
+        <p>Dashboard Operativa in Tempo Reale</p>
     </div>
 
     <!-- Sezione Produzioni -->
     <div class="section-title">🏭 Fabbriche & Produzione</div>
     <div class="card-list">
 
-        <!-- Impastatrice / Mangimificio -->
+        <!-- Impastatrice -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🥣</div>
@@ -323,10 +289,11 @@
 
     </div>
 
-    <!-- Sezione Eventi & Visitatori -->
+    <!-- Sezione Visitatori & Raccolto -->
     <div class="section-title">👥 Visitatori & Raccolto</div>
     <div class="card-list">
 
+        <!-- Visitatori -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🚶</div>
@@ -338,6 +305,7 @@
             <button class="btn btn-blue" onclick="eseguiAzione('Visitatori', 'status-visitatori', 'Controllati')">Aggiorna</button>
         </div>
 
+        <!-- Grano -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🌾</div>
@@ -351,33 +319,28 @@
 
     </div>
 
-    <!-- Elemento Toast per notifiche -->
+    <!-- Elemento Toast -->
     <div id="toast">Azione eseguita!</div>
 
     <script>
-        // Inizializzazione Telegram Web App API
         const tg = window.Telegram ? window.Telegram.WebApp : null;
 
         if (tg) {
             tg.ready();
-            tg.expand(); // Espande l'app a tutto schermo sul telefono
+            tg.expand();
         }
 
-        // Funzione per gestire i click sui pulsanti SENZA uscire dalla Mini App
         function eseguiAzione(nomeStruttura, elementId, nuovoStato) {
-            // Vibrazione del telefono (se supportata da Telegram)
             if (tg && tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('medium');
             }
 
-            // Modifica dinamica dello stato visivo nel testo
             const statusElem = document.getElementById(elementId);
             if (statusElem) {
                 statusElem.className = "status-tag active";
                 statusElem.innerHTML = "🟢 " + nuovoStato;
             }
 
-            // Mostra notifica Toast
             mostraToast(nomeStruttura + ": " + nuovoStato);
         }
 
