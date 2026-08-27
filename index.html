@@ -2,167 +2,390 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hay Day Mini App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hay Day Master Dashboard</title>
+    <!-- Script Ufficiale Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg-color: #2b1d0c;
-            --card-bg: #3d2812;
-            --accent-green: #4CAF50;
-            --accent-yellow: #FFC107;
-            --accent-red: #F44336;
-            --text-color: #f5f5f5;
+            --bg-dark: #1b120c;
+            --card-bg: linear-gradient(145deg, #3d291a, #2b1c11);
+            --card-border: #6e4726;
+            --accent-gold: #f39c12;
+            --accent-green: #27ae60;
+            --accent-orange: #d35400;
+            --accent-blue: #2980b9;
+            --text-main: #fff3e0;
+            --text-sub: #bcaaa4;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 8px;
+
+        * {
             box-sizing: border-box;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: 'Nunito', sans-serif;
         }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 12px;
+            padding-bottom: 30px;
+        }
+
+        /* Intestazione */
         .header {
             text-align: center;
-            margin-bottom: 4px;
+            padding: 15px 10px;
+            background: linear-gradient(180deg, #4a321f 0%, #2b1c11 100%);
+            border: 2px solid var(--accent-gold);
+            border-radius: 16px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
+
         .header h1 {
-            font-size: 15px;
-            margin: 0;
-            color: var(--accent-yellow);
-        }
-        .header p {
-            font-size: 10px;
-            color: #aaa;
-            margin: 2px 0 0 0;
-        }
-        .section-title {
-            font-size: 11px;
-            text-transform: uppercase;
+            font-size: 20px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
             letter-spacing: 0.5px;
-            color: #d4a373;
-            margin: 4px 0 2px 2px;
         }
-        .card {
-            background-color: var(--card-bg);
+
+        .header p {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        /* Widget Scorte Silo / Granaio */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            margin: 3px 0;
+        }
+
+        .progress-bar {
+            background: #1a1009;
             border-radius: 8px;
-            padding: 6px 10px;
-            margin-bottom: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            height: 8px;
+            overflow: hidden;
+            border: 1px solid #4a321f;
         }
-        .card-info {
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f39c12, #27ae60);
+            border-radius: 8px;
+        }
+
+        /* Titoli Sezione */
+        .section-title {
+            font-size: 13px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 15px 0 8px 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Container Card */
+        .card-list {
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            padding-right: 5px;
+            gap: 9px;
         }
-        .card-title {
-            font-weight: bold;
-            font-size: 12px;
-            margin-bottom: 1px;
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
-        .card-status {
-            font-size: 10px;
-            color: #ccc;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 210px;
+
+        .card-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .status-active { color: var(--accent-green); }
-        .status-error { color: #ff8a80; }
-        .status-wait { color: var(--accent-yellow); }
-        
+
+        .card-icon {
+            font-size: 26px;
+            background: rgba(0,0,0,0.2);
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .card-details h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .status-tag {
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-tag.active { color: #2ecc71; }
+        .status-tag.warning { color: #e67e22; }
+        .status-tag.idle { color: #95a5a6; }
+
+        /* Pulsanti Azione */
         .btn {
-            background-color: var(--accent-green);
-            color: white;
             border: none;
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-weight: bold;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 900;
+            color: #fff;
             cursor: pointer;
-            font-size: 10px;
-            flex-shrink: 0;
+            transition: all 0.15s ease;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.4);
+            text-transform: uppercase;
         }
-        .btn-search { background-color: #d97706; }
-        .btn-wait { background-color: #555; }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+        }
+
+        .btn-green {
+            background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+            border: 1px solid #1e8449;
+        }
+
+        .btn-orange {
+            background: linear-gradient(180deg, #e67e22 0%, #d35400 100%);
+            border: 1px solid #a04000;
+        }
+
+        .btn-blue {
+            background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
+            border: 1px solid #1a5276;
+        }
+
+        /* Notifica Toast Interna */
+        #toast {
+            visibility: hidden;
+            min-width: 220px;
+            background-color: #f39c12;
+            color: #1b120c;
+            text-align: center;
+            border-radius: 8px;
+            padding: 10px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            font-weight: 900;
+            font-size: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        }
+
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.3s, fadeout 0.3s 1.7s;
+        }
+
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 20px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 20px; opacity: 1; } to { bottom: 0; opacity: 0; } }
     </style>
 </head>
 <body>
 
+    <!-- Header Principale -->
     <div class="header">
-        <h1>🌾 HAY DAY MASTER DASHBOARD</h1>
-        <p>Fattoria Principale 🍂</p>
+        <h1>🌾 HAY DAY DASHBOARD 🌾</h1>
+        <p>Gestione Fattoria Principale</p>
     </div>
 
-    <div>
-        <div class="section-title">🏭 Fabbriche & Produzione</div>
-        
-        <div class="card">
-            <div class="card-info">
-                <span class="card-title">🥖 Forno (Pane)</span>
-                <span class="card-status status-active">🟢 Produzione avviata</span>
-            </div>
-            <button class="btn" onclick="sendAction('run_bread')">Avvia</button>
+    <!-- Scorte & Silo -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">🌾 Silo Capienza</div>
+            <div class="stat-value">145 / 200</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 72%;"></div></div>
         </div>
-
-        <div class="card">
-            <div class="card-info">
-                <span class="card-title">🍝 Pasta</span>
-                <span class="card-status status-error">⚠️ Non trovato sulla mappa</span>
-            </div>
-            <button class="btn btn-search" onclick="sendAction('run_pasta')">Cerca</button>
-        </div>
-
-        <div class="card">
-            <div class="card-info">
-                <span class="card-title">🧈 Caseificio</span>
-                <span class="card-status status-error">⚠️ Non trovato sulla mappa</span>
-            </div>
-            <button class="btn btn-search" onclick="sendAction('run_dairy')">Cerca</button>
-        </div>
-
-        <div class="card">
-            <div class="card-info">
-                <span class="card-title">🥓 Barbecue</span>
-                <span class="card-status status-error">⚠️ Non trovato sulla mappa</span>
-            </div>
-            <button class="btn btn-search" onclick="sendAction('run_bbq')">Cerca</button>
+        <div class="stat-card">
+            <div class="stat-title">📦 Granaio Capienza</div>
+            <div class="stat-value">180 / 200</div>
+            <div class="progress-bar"><div class="progress-fill" style="width: 90%;"></div></div>
         </div>
     </div>
 
-    <div>
-        <div class="section-title">👥 Visitatori & Raccolto</div>
+    <!-- Sezione Produzioni -->
+    <div class="section-title">🏭 Fabbriche & Produzione</div>
+    <div class="card-list">
+
+        <!-- Impastatrice / Mangimificio -->
         <div class="card">
             <div class="card-info">
-                <span class="card-title">🚶‍♂️ Visitatori</span>
-                <span class="card-status status-wait">💤 Nessun visitatore attivo</span>
+                <div class="card-icon">🥣</div>
+                <div class="card-details">
+                    <h3>Impastatrice</h3>
+                    <div class="status-tag warning" id="status-impastatrice">⚠️ In attesa di ingredienti</div>
+                </div>
             </div>
-            <button class="btn btn-wait" onclick="sendAction('run_visitors')">Aggiorna</button>
+            <button class="btn btn-orange" onclick="eseguiAzione('Impastatrice', 'status-impastatrice', 'Avviata')">Prepara</button>
+        </div>
+
+        <!-- Forno -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🥖</div>
+                <div class="card-details">
+                    <h3>Forno (Pane)</h3>
+                    <div class="status-tag active" id="status-forno">🟢 Produzione avviata</div>
+                </div>
+            </div>
+            <button class="btn btn-green" onclick="eseguiAzione('Forno', 'status-forno', 'Pronto')">Raccogli</button>
+        </div>
+
+        <!-- Macchina della Pasta -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🍝</div>
+                <div class="card-details">
+                    <h3>Macchina Pasta</h3>
+                    <div class="status-tag warning" id="status-pasta">⚠️ Non trovata sulla mappa</div>
+                </div>
+            </div>
+            <button class="btn btn-orange" onclick="eseguiAzione('Macchina Pasta', 'status-pasta', 'Ricerca')">Cerca</button>
+        </div>
+
+        <!-- Caseificio -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🧀</div>
+                <div class="card-details">
+                    <h3>Caseificio</h3>
+                    <div class="status-tag idle" id="status-caseificio">⚪ Inattivo</div>
+                </div>
+            </div>
+            <button class="btn btn-blue" onclick="eseguiAzione('Caseificio', 'status-caseificio', 'Avviato')">Avvia</button>
+        </div>
+
+        <!-- Barbecue -->
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🍖</div>
+                <div class="card-details">
+                    <h3>Barbecue</h3>
+                    <div class="status-tag warning" id="status-barbecue">⚠️ Non trovato sulla mappa</div>
+                </div>
+            </div>
+            <button class="btn btn-orange" onclick="eseguiAzione('Barbecue', 'status-barbecue', 'Ricerca')">Cerca</button>
+        </div>
+
+    </div>
+
+    <!-- Sezione Eventi & Visitatori -->
+    <div class="section-title">👥 Visitatori & Raccolto</div>
+    <div class="card-list">
+
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🚶</div>
+                <div class="card-details">
+                    <h3>Visitatori</h3>
+                    <div class="status-tag idle" id="status-visitatori">💤 Nessun visitatore attivo</div>
+                </div>
+            </div>
+            <button class="btn btn-blue" onclick="eseguiAzione('Visitatori', 'status-visitatori', 'Controllati')">Aggiorna</button>
         </div>
 
         <div class="card">
             <div class="card-info">
-                <span class="card-title">🌾 Grano</span>
-                <span class="card-status status-active">✅ Raccolto completato</span>
+                <div class="card-icon">🌾</div>
+                <div class="card-details">
+                    <h3>Grano</h3>
+                    <div class="status-tag active" id="status-grano">✅ Raccolto completato</div>
+                </div>
             </div>
-            <button class="btn" onclick="sendAction('run_crops')">Riattiva</button>
+            <button class="btn btn-green" onclick="eseguiAzione('Grano', 'status-grano', 'Seminato')">Riattiva</button>
         </div>
+
     </div>
+
+    <!-- Elemento Toast per notifiche -->
+    <div id="toast">Azione eseguita!</div>
 
     <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
-        function sendAction(action) {
-            tg.sendData(action);
-            tg.close();
+        // Inizializzazione Telegram Web App API
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+        if (tg) {
+            tg.ready();
+            tg.expand(); // Espande l'app a tutto schermo sul telefono
+        }
+
+        // Funzione per gestire i click sui pulsanti SENZA uscire dalla Mini App
+        function eseguiAzione(nomeStruttura, elementId, nuovoStato) {
+            // Vibrazione del telefono (se supportata da Telegram)
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+
+            // Modifica dinamica dello stato visivo nel testo
+            const statusElem = document.getElementById(elementId);
+            if (statusElem) {
+                statusElem.className = "status-tag active";
+                statusElem.innerHTML = "🟢 " + nuovoStato;
+            }
+
+            // Mostra notifica Toast
+            mostraToast(nomeStruttura + ": " + nuovoStato);
+        }
+
+        function mostraToast(messaggio) {
+            const toast = document.getElementById("toast");
+            toast.innerText = messaggio;
+            toast.className = "show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 2000);
         }
     </script>
 </body>
