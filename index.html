@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hay Day Master Dashboard</title>
-    <!-- Script Ufficiale Telegram Web App -->
+    <title>Hay Day Master Dashboard - Multi-Istanza Animata</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --bg-dark: #120c08;
-            --card-bg: linear-gradient(145deg, rgba(50, 33, 22, 0.95), rgba(30, 19, 11, 0.98));
-            --card-border: rgba(139, 90, 43, 0.5);
+            --card-bg: linear-gradient(145deg, #3d2817, #21140b);
+            --card-border: #6e4726;
             --accent-gold: #f39c12;
             --accent-green: #2ecc71;
             --accent-orange: #e67e22;
@@ -27,6 +26,7 @@
             padding: 0;
             user-select: none;
             font-family: 'Nunito', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -34,23 +34,25 @@
             background-image: radial-gradient(circle at 50% 0%, #2b1810 0%, #120c08 100%);
             color: var(--text-main);
             padding: 14px;
-            padding-bottom: 40px;
+            padding-bottom: 45px;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        /* Intestazione Moderna */
+        /* Intestazione con animazione di discesa */
         .header {
             text-align: center;
-            padding: 16px 12px;
+            padding: 18px 12px;
             background: linear-gradient(180deg, #4a321f 0%, #22140b 100%);
             border: 2px solid var(--accent-gold);
             border-radius: 18px;
             margin-bottom: 20px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.2);
+            animation: fadeInDown 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         .header h1 {
-            font-size: 21px;
+            font-size: 22px;
             font-weight: 900;
             color: var(--accent-gold);
             text-shadow: 1px 2px 4px rgba(0,0,0,0.8);
@@ -64,17 +66,42 @@
             font-weight: 600;
         }
 
-        /* Titoli Sezione */
-        .section-title {
-            font-size: 12px;
+        /* Titoli Sezione Istanza con dissolvenza */
+        .instance-title {
+            font-size: 14px;
             font-weight: 900;
             color: var(--accent-gold);
+            background: rgba(243, 156, 18, 0.1);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+            padding: 8px 12px;
+            border-radius: 12px;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            margin: 18px 0 10px 4px;
+            letter-spacing: 1px;
+            margin: 24px 0 12px 0;
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: space-between;
+            animation: fadeIn 0.8s ease-out both;
+        }
+
+        .instance-title.inst2 {
+            color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
+            border-color: rgba(52, 152, 219, 0.3);
+        }
+
+        .instance-badge {
+            font-size: 10px;
+            background: var(--accent-gold);
+            color: #120c08;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 900;
+        }
+
+        .instance-badge.blue {
+            background: #3498db;
+            color: #fff;
         }
 
         /* Container Card */
@@ -84,7 +111,7 @@
             gap: 12px;
         }
 
-        /* Card Fabbriche e Azioni */
+        /* Card con animazione a cascata (Staggered Fade In) */
         .card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -93,9 +120,20 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
+
+        .card:active {
+            transform: scale(0.97);
+            border-color: var(--accent-gold);
+        }
+
+        /* Ritardi sequenziali per l'entrata delle card */
+        .card:nth-child(1) { animation-delay: 0.15s; }
+        .card:nth-child(2) { animation-delay: 0.25s; }
+        .card:nth-child(3) { animation-delay: 0.35s; }
 
         .card-info {
             display: flex;
@@ -116,12 +154,17 @@
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
         }
 
         .card-details {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 4px;
             flex: 1;
             min-width: 0;
         }
@@ -135,7 +178,7 @@
             text-overflow: ellipsis;
         }
 
-        /* Tag di Stato Dettagliato */
+        /* Tag di Stato */
         .status-tag {
             font-size: 11px;
             font-weight: 700;
@@ -145,23 +188,24 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            transition: all 0.3s ease;
         }
 
-        .status-tag.active { color: #2ecc71; }
-        .status-tag.warning { color: #f39c12; }
+        .status-tag.active { color: #2ecc71; text-shadow: 0 0 8px rgba(46, 204, 113, 0.4); }
+        .status-tag.warning { color: #f39c12; text-shadow: 0 0 8px rgba(243, 156, 18, 0.4); }
         .status-tag.idle { color: #95a5a6; }
 
-        /* Pulsanti Azione */
+        /* Pulsanti Azione Rimbalzanti */
         .btn {
             border: none;
-            padding: 9px 16px;
+            padding: 10px 16px;
             border-radius: 12px;
             font-size: 11px;
             font-weight: 900;
             color: #fff;
             cursor: pointer;
-            transition: all 0.1s ease;
-            box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.2);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             flex-shrink: 0;
@@ -169,157 +213,157 @@
 
         .btn:active {
             transform: translateY(3px);
-            box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        .btn-green {
-            background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
-            border: 1px solid #1e8449;
-        }
+        .btn-green { background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%); border: 1px solid #1e8449; }
+        .btn-orange { background: linear-gradient(180deg, #f39c12 0%, #d35400 100%); border: 1px solid #a04000; }
+        .btn-blue { background: linear-gradient(180deg, #3498db 0%, #2980b9 100%); border: 1px solid #1a5276; }
 
-        .btn-orange {
-            background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
-            border: 1px solid #a04000;
-        }
-
-        .btn-blue {
-            background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
-            border: 1px solid #1a5276;
-        }
-
-        /* Notifica Toast */
+        /* Notifica Toast Animata */
         #toast {
             visibility: hidden;
-            min-width: 240px;
-            background-color: var(--accent-gold);
-            color: #120c08;
+            min-width: 250px;
+            background: linear-gradient(135deg, #f39c12, #d35400);
+            color: #fff;
             text-align: center;
-            border-radius: 10px;
-            padding: 12px;
+            border-radius: 14px;
+            padding: 14px;
             position: fixed;
             z-index: 100;
             left: 50%;
-            bottom: 25px;
+            bottom: -50px;
             transform: translateX(-50%);
             font-weight: 900;
             font-size: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.7);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            opacity: 0;
         }
 
         #toast.show {
             visibility: visible;
-            animation: fadein 0.3s, fadeout 0.3s 1.7s;
+            bottom: 30px;
+            opacity: 1;
         }
 
-        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 25px; opacity: 1; } }
-        @keyframes fadeout { from { bottom: 25px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+        /* Animazioni Keyframes */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-25px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(25px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Animazione pulsazione testo di stato quando si clicca */
+        .pulse-text {
+            animation: pulseState 0.4s ease;
+        }
+
+        @keyframes pulseState {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.08); color: #fff; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Header Principale -->
     <div class="header">
         <h1>🌾 HAY DAY MASTER 🌾</h1>
-        <p>Dashboard Operativa in Tempo Reale</p>
+        <p>Controllo Multi-Istanza Animato</p>
     </div>
 
-    <!-- Sezione Produzioni -->
-    <div class="section-title">🏭 Fabbriche & Produzione</div>
+    <div class="instance-title">
+        <span>⚙️ Istanza 1 (Mambo 1)</span>
+        <span class="instance-badge">ATTIVA</span>
+    </div>
+    
     <div class="card-list">
-
-        <!-- Impastatrice -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🥣</div>
                 <div class="card-details">
-                    <h3>Impastatrice</h3>
-                    <div class="status-tag warning" id="status-impastatrice">⚠️ In attesa di ingredienti</div>
+                    <h3>Impastatrice (Inst 1)</h3>
+                    <div class="status-tag warning" id="i1-impastatrice">⚠️ In attesa di ingredienti</div>
                 </div>
             </div>
-            <button class="btn btn-orange" onclick="eseguiAzione('Impastatrice', 'status-impastatrice', 'Avviata')">Prepara</button>
+            <button class="btn btn-orange" onclick="eseguiAzione('Istanza 1 - Impastatrice', 'i1-impastatrice', 'Avviata')">Prepara</button>
         </div>
 
-        <!-- Forno -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🥖</div>
                 <div class="card-details">
-                    <h3>Forno (Pane)</h3>
-                    <div class="status-tag active" id="status-forno">🟢 Produzione avviata</div>
+                    <h3>Forno (Inst 1)</h3>
+                    <div class="status-tag active" id="i1-forno">🟢 Produzione avviata</div>
                 </div>
             </div>
-            <button class="btn btn-green" onclick="eseguiAzione('Forno', 'status-forno', 'Pronto')">Raccogli</button>
+            <button class="btn btn-green" onclick="eseguiAzione('Istanza 1 - Forno', 'i1-forno', 'Pronto')">Raccogli</button>
         </div>
 
-        <!-- Macchina della Pasta -->
-        <div class="card">
-            <div class="card-info">
-                <div class="card-icon">🍝</div>
-                <div class="card-details">
-                    <h3>Macchina Pasta</h3>
-                    <div class="status-tag warning" id="status-pasta">⚠️ Non trovata sulla mappa</div>
-                </div>
-            </div>
-            <button class="btn btn-orange" onclick="eseguiAzione('Macchina Pasta', 'status-pasta', 'Ricerca')">Cerca</button>
-        </div>
-
-        <!-- Caseificio -->
-        <div class="card">
-            <div class="card-info">
-                <div class="card-icon">🧀</div>
-                <div class="card-details">
-                    <h3>Caseificio</h3>
-                    <div class="status-tag idle" id="status-caseificio">⚪ Inattivo</div>
-                </div>
-            </div>
-            <button class="btn btn-blue" onclick="eseguiAzione('Caseificio', 'status-caseificio', 'Avviato')">Avvia</button>
-        </div>
-
-        <!-- Barbecue -->
-        <div class="card">
-            <div class="card-info">
-                <div class="card-icon">🍖</div>
-                <div class="card-details">
-                    <h3>Barbecue</h3>
-                    <div class="status-tag warning" id="status-barbecue">⚠️ Non trovato sulla mappa</div>
-                </div>
-            </div>
-            <button class="btn btn-orange" onclick="eseguiAzione('Barbecue', 'status-barbecue', 'Ricerca')">Cerca</button>
-        </div>
-
-    </div>
-
-    <!-- Sezione Visitatori & Raccolto -->
-    <div class="section-title">👥 Visitatori & Raccolto</div>
-    <div class="card-list">
-
-        <!-- Visitatori -->
-        <div class="card">
-            <div class="card-info">
-                <div class="card-icon">🚶</div>
-                <div class="card-details">
-                    <h3>Visitatori</h3>
-                    <div class="status-tag idle" id="status-visitatori">💤 Nessun visitatore attivo</div>
-                </div>
-            </div>
-            <button class="btn btn-blue" onclick="eseguiAzione('Visitatori', 'status-visitatori', 'Controllati')">Aggiorna</button>
-        </div>
-
-        <!-- Grano -->
         <div class="card">
             <div class="card-info">
                 <div class="card-icon">🌾</div>
                 <div class="card-details">
-                    <h3>Grano</h3>
-                    <div class="status-tag active" id="status-grano">✅ Raccolto completato</div>
+                    <h3>Grano (Inst 1)</h3>
+                    <div class="status-tag active" id="i1-grano">✅ Raccolto completato</div>
                 </div>
             </div>
-            <button class="btn btn-green" onclick="eseguiAzione('Grano', 'status-grano', 'Seminato')">Riattiva</button>
+            <button class="btn btn-green" onclick="eseguiAzione('Istanza 1 - Grano', 'i1-grano', 'Seminato')">Riattiva</button>
         </div>
-
     </div>
 
-    <!-- Elemento Toast -->
+
+    <div class="instance-title inst2">
+        <span>⚙️ Istanza 2 (Mambo 2.0)</span>
+        <span class="instance-badge blue">ATTIVA</span>
+    </div>
+    
+    <div class="card-list">
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🥣</div>
+                <div class="card-details">
+                    <h3>Impastatrice (Inst 2)</h3>
+                    <div class="status-tag warning" id="i2-impastatrice">⚠️ In attesa di ingredienti</div>
+                </div>
+            </div>
+            <button class="btn btn-orange" onclick="eseguiAzione('Istanza 2 - Impastatrice', 'i2-impastatrice', 'Avviata')">Prepara</button>
+        </div>
+
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🥖</div>
+                <div class="card-details">
+                    <h3>Forno (Inst 2)</h3>
+                    <div class="status-tag active" id="i2-forno">🟢 Produzione avviata</div>
+                </div>
+            </div>
+            <button class="btn btn-green" onclick="eseguiAzione('Istanza 2 - Forno', 'i2-forno', 'Pronto')">Raccogli</button>
+        </div>
+
+        <div class="card">
+            <div class="card-info">
+                <div class="card-icon">🌾</div>
+                <div class="card-details">
+                    <h3>Grano (Inst 2)</h3>
+                    <div class="status-tag active" id="i2-grano">✅ Raccolto completato</div>
+                </div>
+            </div>
+            <button class="btn btn-green" onclick="eseguiAzione('Istanza 2 - Grano', 'i2-grano', 'Seminato')">Riattiva</button>
+        </div>
+    </div>
+
     <div id="toast">Azione eseguita!</div>
 
     <script>
@@ -337,8 +381,12 @@
 
             const statusElem = document.getElementById(elementId);
             if (statusElem) {
-                statusElem.className = "status-tag active";
+                statusElem.className = "status-tag active pulse-text";
                 statusElem.innerHTML = "🟢 " + nuovoStato;
+                
+                setTimeout(() => {
+                    statusElem.classList.remove('pulse-text');
+                }, 400);
             }
 
             mostraToast(nomeStruttura + ": " + nuovoStato);
@@ -348,7 +396,12 @@
             const toast = document.getElementById("toast");
             toast.innerText = messaggio;
             toast.className = "show";
-            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 2000);
+            
+            if (window.toastTimeout) clearTimeout(window.toastTimeout);
+            
+            window.toastTimeout = setTimeout(function(){ 
+                toast.className = ""; 
+            }, 2000);
         }
     </script>
 </body>
