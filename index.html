@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hay Day Master - Compact Dual Grid</title>
+    <title>Hay Day Master - Dual Grid Live</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     
@@ -33,66 +33,65 @@
             background-image: radial-gradient(circle at 50% -20%, #3a1d10 0%, #090503 80%);
             background-attachment: fixed;
             color: var(--text-main);
-            padding: 8px;
+            padding: 6px;
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        /* Header compatto */
+        /* Header ultra compatto */
         .header {
             text-align: center;
-            padding: 8px;
+            padding: 6px;
             background: linear-gradient(135deg, #3d2817 0%, #150a04 100%);
             border: 2px solid var(--accent-gold);
-            border-radius: 12px;
-            margin-bottom: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.7);
             animation: headerGlow 3s ease-in-out infinite alternate;
         }
 
         .header h1 {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 900;
             color: var(--accent-gold);
             letter-spacing: 0.5px;
         }
 
         .header p {
-            font-size: 9px;
+            font-size: 8px;
             color: #bcaaa4;
             font-weight: 700;
             text-transform: uppercase;
         }
 
-        /* Griglia principale a 2 colonne (Sinistra Istanza 1, Destra Istanza 2) */
+        /* Griglia principale a 2 colonne perfette: Sinistra Istanza 1, Destra Istanza 2 */
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
-        /* Colonna di singola istanza */
-        .instance-column {
-            display: flex;
-            flex-direction: column;
             gap: 6px;
         }
 
-        /* Header colonna istanza con ingranaggio che gira */
+        .instance-column {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        /* Header colonna istanza */
         .column-header {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             background: rgba(243, 156, 18, 0.15);
             border: 1px solid rgba(243, 156, 18, 0.4);
             color: var(--accent-gold);
-            padding: 6px 8px;
-            border-radius: 8px;
+            padding: 5px 4px;
+            border-radius: 6px;
             text-align: center;
             text-transform: uppercase;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 3px;
         }
 
         .column-header.inst2 {
@@ -110,14 +109,12 @@
         .mini-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 10px;
-            padding: 6px 8px;
+            border-radius: 8px;
+            padding: 5px 6px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
-            position: relative;
-            overflow: hidden;
+            gap: 3px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
             transition: transform 0.1s;
         }
 
@@ -132,40 +129,40 @@
         }
 
         .mini-icon {
-            font-size: 16px;
+            font-size: 14px;
             animation: floatIcon 3s ease-in-out infinite alternate;
         }
 
         .mini-title {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 800;
             color: var(--text-main);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             flex: 1;
-            margin-left: 6px;
+            margin-left: 4px;
         }
 
         .status-dot {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: #f39c12;
-            box-shadow: 0 0 6px #f39c12;
+            box-shadow: 0 0 5px #f39c12;
             animation: pulseDot 1.5s infinite;
         }
 
-        .status-dot.active { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
+        .status-dot.active { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
         .status-dot.idle { background: #95a5a6; box-shadow: none; animation: none; }
 
         /* Pulsante super compatto */
         .btn-mini {
             width: 100%;
             border: none;
-            padding: 4px;
-            border-radius: 6px;
-            font-size: 9px;
+            padding: 3px;
+            border-radius: 5px;
+            font-size: 8px;
             font-weight: 900;
             color: #fff;
             cursor: pointer;
@@ -186,31 +183,30 @@
         /* Toast Notifica */
         #toast {
             visibility: hidden;
-            min-width: 200px;
+            min-width: 180px;
             background: linear-gradient(135deg, #f39c12, #c0392b);
             color: #fff;
             text-align: center;
-            border-radius: 12px;
-            padding: 10px;
+            border-radius: 10px;
+            padding: 8px;
             position: fixed;
             z-index: 100;
             left: 50%;
-            bottom: -50px;
+            bottom: -40px;
             transform: translateX(-50%);
             font-weight: 900;
             font-size: 10px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.8);
             transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
             opacity: 0;
         }
 
         #toast.show {
             visibility: visible;
-            bottom: 20px;
+            bottom: 15px;
             opacity: 1;
         }
 
-        /* Animazioni Continue */
         @keyframes spinGear {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
@@ -227,29 +223,25 @@
         }
 
         @keyframes headerGlow {
-            0% { border-color: #f39c12; box-shadow: 0 4px 15px rgba(0,0,0,0.7); }
-            100% { border-color: #f1c40f; box-shadow: 0 4px 20px rgba(243, 156, 18, 0.4); }
+            0% { border-color: #f39c12; box-shadow: 0 3px 12px rgba(0,0,0,0.7); }
+            100% { border-color: #f1c40f; box-shadow: 0 3px 15px rgba(243, 156, 18, 0.4); }
         }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
     <div class="header">
         <h1>🌾 HAY DAY MASTER 🌾</h1>
         <p>Dual Grid Live Animated</p>
     </div>
 
-    <!-- Griglia a Due Colonne Affiancate -->
     <div class="dashboard-grid">
 
-        <!-- ================= COLONNA 1: ISTANZA 1 ================= -->
         <div class="instance-column">
             <div class="column-header">
                 <span class="gear-icon">⚙️</span> Mambo 1
             </div>
 
-            <!-- Impastatrice -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🥣</span>
@@ -259,7 +251,6 @@
                 <button class="btn-mini btn-orange" onclick="azione('I1 - Impastatrice', 'Prepara')">Prepara</button>
             </div>
 
-            <!-- Forno -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🥖</span>
@@ -269,7 +260,6 @@
                 <button class="btn-mini btn-green" onclick="azione('I1 - Forno', 'Raccogli')">Raccogli</button>
             </div>
 
-            <!-- Pasticceria -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🥧</span>
@@ -279,7 +269,6 @@
                 <button class="btn-mini btn-orange" onclick="azione('I1 - Pasticceria', 'Prepara')">Prepara</button>
             </div>
 
-            <!-- Macchina Pasta -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🍝</span>
@@ -289,7 +278,6 @@
                 <button class="btn-mini btn-orange" onclick="azione('I1 - Pasta', 'Cerca')">Cerca</button>
             </div>
 
-            <!-- Caseificio -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🧀</span>
@@ -299,7 +287,6 @@
                 <button class="btn-mini btn-blue" onclick="azione('I1 - Caseificio', 'Avvia')">Avvia</button>
             </div>
 
-            <!-- Barbecue -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🍖</span>
@@ -309,7 +296,6 @@
                 <button class="btn-mini btn-orange" onclick="azione('I1 - Barbecue', 'Cerca')">Cerca</button>
             </div>
 
-            <!-- Visitatori -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🚶</span>
@@ -319,7 +305,6 @@
                 <button class="btn-mini btn-blue" onclick="azione('I1 - Visitatori', 'Aggiorna')">Aggiorna</button>
             </div>
 
-            <!-- Grano / Semina -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🌾</span>
@@ -331,13 +316,11 @@
         </div>
 
 
-        <!-- ================= COLONNA 2: ISTANZA 2 ================= -->
         <div class="instance-column">
             <div class="column-header inst2">
                 <span class="gear-icon">⚙️</span> Mambo 2.0
             </div>
 
-            <!-- Impastatrice -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🥣</span>
@@ -347,7 +330,6 @@
                 <button class="btn-mini btn-orange" onclick="azione('I2 - Impastatrice', 'Prepara')">Prepara</button>
             </div>
 
-            <!-- Forno -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🥖</span>
@@ -357,7 +339,6 @@
                 <button class="btn-mini btn-green" onclick="azione('I2 - Forno', 'Raccogli')">Raccogli</button>
             </div>
 
-            <!-- Pasticceria -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🥧</span>
@@ -367,7 +348,6 @@
                 <button class="btn-mini btn-orange" onclick="azione('I2 - Pasticceria', 'Prepara')">Prepara</button>
             </div>
 
-            <!-- Macchina Pasta -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🍝</span>
@@ -377,7 +357,6 @@
                 <button class="btn-mini btn-orange" onclick="azione('I2 - Pasta', 'Cerca')">Cerca</button>
             </div>
 
-            <!-- Caseificio -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🧀</span>
@@ -387,7 +366,6 @@
                 <button class="btn-mini btn-blue" onclick="azione('I2 - Caseificio', 'Avvia')">Avvia</button>
             </div>
 
-            <!-- Barbecue -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🍖</span>
@@ -397,7 +375,6 @@
                 <button class="btn-mini btn-orange" onclick="azione('I2 - Barbecue', 'Cerca')">Cerca</button>
             </div>
 
-            <!-- Visitatori -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🚶</span>
@@ -407,7 +384,6 @@
                 <button class="btn-mini btn-blue" onclick="azione('I2 - Visitatori', 'Aggiorna')">Aggiorna</button>
             </div>
 
-            <!-- Grano / Semina -->
             <div class="mini-card">
                 <div class="mini-card-top">
                     <span class="mini-icon">🌾</span>
@@ -420,7 +396,6 @@
 
     </div>
 
-    <!-- Toast -->
     <div id="toast">Comando inviato!</div>
 
     <script>
@@ -439,7 +414,7 @@
             t.innerText = msg;
             t.className = "show";
             if (window.tTimeout) clearTimeout(window.tTimeout);
-            window.tTimeout = setTimeout(() => { t.className = ""; }, 1800);
+            window.tTimeout = setTimeout(() => { t.className = ""; }, 1500);
         }
     </script>
 </body>
