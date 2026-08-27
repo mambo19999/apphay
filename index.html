@@ -419,3 +419,423 @@
     </script>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hay Day Master - Live Real-Time Status</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #090503;
+            --card-bg: linear-gradient(135deg, #2c1a0e 0%, #150a04 100%);
+            --card-border: #704214;
+            --accent-gold: #f39c12;
+            --accent-green: #2ecc71;
+            --accent-orange: #e67e22;
+            --accent-blue: #3498db;
+            --text-main: #fff3e0;
+            --text-sub: #bcaaa4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: 'Nunito', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% -20%, #3a1d10 0%, #090503 80%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            padding: 6px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Header ultra compatto */
+        .header {
+            text-align: center;
+            padding: 6px;
+            background: linear-gradient(135deg, #3d2817 0%, #150a04 100%);
+            border: 2px solid var(--accent-gold);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.7);
+        }
+
+        .header h1 {
+            font-size: 13px;
+            font-weight: 900;
+            color: var(--accent-gold);
+        }
+
+        .header p {
+            font-size: 8px;
+            color: var(--text-sub);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* Griglia a 2 colonne */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .instance-column {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .column-header {
+            font-size: 9px;
+            font-weight: 900;
+            background: rgba(243, 156, 18, 0.15);
+            border: 1px solid rgba(243, 156, 18, 0.4);
+            color: var(--accent-gold);
+            padding: 4px;
+            border-radius: 6px;
+            text-align: center;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .column-header.inst2 {
+            color: #3498db;
+            background: rgba(52, 152, 219, 0.15);
+            border-color: rgba(52, 152, 219, 0.4);
+        }
+
+        .gear-icon {
+            display: inline-block;
+            animation: spinGear 6s linear infinite;
+        }
+
+        /* Mini Card con Stato in tempo reale */
+        .mini-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 5px 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+        }
+
+        .mini-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .mini-icon {
+            font-size: 13px;
+            animation: floatIcon 3s ease-in-out infinite alternate;
+        }
+
+        .mini-title {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            margin-left: 4px;
+        }
+
+        /* Testo dello stato in tempo reale sotto il titolo */
+        .status-realtime {
+            font-size: 7.5px;
+            font-weight: 700;
+            color: var(--text-sub);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 5px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .status-realtime.working { color: #f39c12; border-color: rgba(243,156,18,0.3); }
+        .status-realtime.ready { color: #2ecc71; border-color: rgba(46,204,113,0.3); }
+        .status-realtime.idle { color: #95a5a6; }
+
+        /* Pulsante compatto */
+        .btn-mini {
+            width: 100%;
+            border: none;
+            padding: 3px;
+            border-radius: 5px;
+            font-size: 8px;
+            font-weight: 900;
+            color: #fff;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+
+        .btn-mini:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .btn-orange { background: linear-gradient(180deg, #f39c12 0%, #d35400 100%); }
+        .btn-green { background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%); }
+        .btn-blue { background: linear-gradient(180deg, #3498db 0%, #2980b9 100%); }
+
+        /* Toast Notifica */
+        #toast {
+            visibility: hidden;
+            min-width: 180px;
+            background: linear-gradient(135deg, #f39c12, #c0392b);
+            color: #fff;
+            text-align: center;
+            border-radius: 10px;
+            padding: 8px;
+            position: fixed;
+            z-index: 100;
+            left: 50%;
+            bottom: -40px;
+            transform: translateX(-50%);
+            font-weight: 900;
+            font-size: 10px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.8);
+            transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            opacity: 0;
+        }
+
+        #toast.show {
+            visibility: visible;
+            bottom: 15px;
+            opacity: 1;
+        }
+
+        @keyframes spinGear {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes floatIcon {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-2px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🌾 HAY DAY MASTER 🌾</h1>
+        <p>Monitoraggio Tempo Reale</p>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div class="instance-column">
+            <div class="column-header">
+                <span class="gear-icon">⚙️</span> Mambo 1
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🥣</span>
+                    <span class="mini-title">Impastatrice</span>
+                </div>
+                <div class="status-realtime working" id="st-i1-imp">⏳ In attesa ingredienti</div>
+                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i1-imp', 'working', '⏳ Preparazione in corso...', 'I1 - Impastatrice avviata')">Prepara</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🥖</span>
+                    <span class="mini-title">Forno</span>
+                </div>
+                <div class="status-realtime ready" id="st-i1-forno">🟢 Pronto da raccogliere</div>
+                <button class="btn-mini btn-green" onclick="aggiornaStato('st-i1-forno', 'ready', '🟢 Raccolto completato', 'I1 - Forno raccolto')">Raccogli</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🥧</span>
+                    <span class="mini-title">Pasticceria</span>
+                </div>
+                <div class="status-realtime working" id="st-i1-past">⏳ In attesa prodotti</div>
+                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i1-past', 'working', '⏳ Sfornando pasticci...', 'I1 - Pasticceria avviata')">Prepara</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🍝</span>
+                    <span class="mini-title">Macchina Pasta</span>
+                </div>
+                <div class="status-realtime idle" id="st-i1-pasta">⚠️ Non trovata / Ferma</div>
+                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i1-pasta', 'working', '🔍 Ricerca in corso...', 'I1 - Ricerca pasta')">Cerca</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🧀</span>
+                    <span class="mini-title">Caseificio</span>
+                </div>
+                <div class="status-realtime idle" id="st-i1-caseo">⚪ Inattivo / Spento</div>
+                <button class="btn-mini btn-blue" onclick="aggiornaStato('st-i1-caseo', 'working', '🧀 Producendo formaggio...', 'I1 - Caseificio avviato')">Avvia</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🍖</span>
+                    <span class="mini-title">Barbecue</span>
+                </div>
+                <div class="status-realtime idle" id="st-i1-barb">⚠️ Non trovato</div>
+                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i1-barb', 'working', '🔍 Ricerca barbecue...', 'I1 - Ricerca barbecue')">Cerca</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🚶</span>
+                    <span class="mini-title">Visitatori</span>
+                </div>
+                <div class="status-realtime idle" id="st-i1-vis">💤 Nessun visitatore</div>
+                <button class="btn-mini btn-blue" onclick="aggiornaStato('st-i1-vis', 'ready', '🚶 Servendo visitatore...', 'I1 - Visitatori aggiornati')">Aggiorna</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🌾</span>
+                    <span class="mini-title">Semina Grano</span>
+                </div>
+                <div class="status-realtime ready" id="st-i1-grano">✅ Raccolto pronto</div>
+                <button class="btn-mini btn-green" onclick="aggiornaStato('st-i1-grano', 'working', '🌾 Nuova semina avviata', 'I1 - Grano seminato')">Riattiva</button>
+            </div>
+        </div>
+
+
+        <div class="instance-column">
+            <div class="column-header inst2">
+                <span class="gear-icon">⚙️</span> Mambo 2.0
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🥣</span>
+                    <span class="mini-title">Impastatrice</span>
+                </div>
+                <div class="status-realtime working" id="st-i2-imp">⏳ In attesa ingredienti</div>
+                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i2-imp', 'working', '⏳ Preparazione in corso...', 'I2 - Impastatrice avviata')">Prepara</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🥖</span>
+                    <span class="mini-title">Forno</span>
+                </div>
+                <div class="status-realtime ready" id="st-i2-forno">🟢 Pronto da raccogliere</div>
+                <button class="btn-mini btn-green" onclick="aggiornaStato('st-i2-forno', 'ready', '🟢 Raccolto completato', 'I2 - Forno raccolto')">Raccogli</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🥧</span>
+                    <span class="mini-title">Pasticceria</span>
+                </div>
+                <div class="status-realtime working" id="st-i2-past">⏳ In attesa prodotti</div>
+                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i2-past', 'working', '⏳ Sfornando pasticci...', 'I2 - Pasticceria avviata')">Prepara</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🍝</span>
+                    <span class="mini-title">Macchina Pasta</span>
+                </div>
+                <div class="status-realtime idle" id="st-i2-pasta">⚠️ Non trovata / Ferma</div>
+                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i2-pasta', 'working', '🔍 Ricerca in corso...', 'I2 - Ricerca pasta')">Cerca</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🧀</span>
+                    <span class="mini-title">Caseificio</span>
+                </div>
+                <div class="status-realtime idle" id="st-i2-caseo">⚪ Inattivo / Spento</div>
+                <button class="btn-mini btn-blue" onclick="aggiornaStato('st-i2-caseo', 'working', '🧀 Producendo formaggio...', 'I2 - Caseificio avviato')">Avvia</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🍖</span>
+                    <span class="mini-title">Barbecue</span>
+                </div>
+                <div class="status-realtime idle" id="st-i2-barb">⚠️ Non trovato</div>
+                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i2-barb', 'working', '🔍 Ricerca barbecue...', 'I2 - Ricerca barbecue')">Cerca</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🚶</span>
+                    <span class="mini-title">Visitatori</span>
+                </div>
+                <div class="status-realtime idle" id="st-i2-vis">💤 Nessun visitatore</div>
+                <button class="btn-mini btn-blue" onclick="aggiornaStato('st-i2-vis', 'ready', '🚶 Servendo visitatore...', 'I2 - Visitatori aggiornati')">Aggiorna</button>
+            </div>
+
+            <div class="mini-card">
+                <div class="mini-card-top">
+                    <span class="mini-icon">🌾</span>
+                    <span class="mini-title">Semina Grano</span>
+                </div>
+                <div class="status-realtime ready" id="st-i2-grano">✅ Raccolto pronto</div>
+                <button class="btn-mini btn-green" onclick="aggiornaStato('st-i2-grano', 'working', '🌾 Nuova semina avviata', 'I2 - Grano seminato')">Riattiva</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="toast">Comando inviato!</div>
+
+    <script>
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (tg) { tg.ready(); tg.expand(); }
+
+        function aggiornaStato(elementId, tipoStato, testoStato, messaggioToast) {
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+
+            const elem = document.getElementById(elementId);
+            if (elem) {
+                elem.className = "status-realtime " + tipoStato;
+                elem.innerText = testoStato;
+            }
+
+            mostraToast(messaggioToast);
+        }
+
+        function mostraToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.className = "show";
+            if (window.tTimeout) clearTimeout(window.tTimeout);
+            window.tTimeout = setTimeout(() => { t.className = ""; }, 1500);
+        }
+    </script>
+</body>
+</html>
