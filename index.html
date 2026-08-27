@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hay Day Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #2b1d0c;
+            --card-bg: #3d2812;
+            --accent-green: #4CAF50;
+            --accent-yellow: #FFC107;
+            --accent-red: #F44336;
+            --text-color: #f5f5f5;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 8px;
+            box-sizing: border-box;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .header h1 {
+            font-size: 15px;
+            margin: 0;
+            color: var(--accent-yellow);
+        }
+        .header p {
+            font-size: 10px;
+            color: #aaa;
+            margin: 2px 0 0 0;
+        }
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #d4a373;
+            margin: 4px 0 2px 2px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .card-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding-right: 5px;
+        }
+        .card-title {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 1px;
+        }
+        .card-status {
+            font-size: 10px;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 210px;
+        }
+        .status-active { color: var(--accent-green); }
+        .status-error { color: #ff8a80; }
+        .status-wait { color: var(--accent-yellow); }
+        
+        .btn {
+            background-color: var(--accent-green);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+        .btn-search { background-color: #d97706; }
+        .btn-wait { background-color: #555; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🌾 HAY DAY MASTER DASHBOARD</h1>
+        <p>Fattoria Principale 🍂</p>
+    </div>
+
+    <div>
+        <div class="section-title">🏭 Fabbriche & Produzione</div>
+        
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title">🥖 Forno (Pane)</span>
+                <span class="card-status status-active">🟢 Produzione avviata</span>
+            </div>
+            <button class="btn" onclick="sendAction('run_bread')">Avvia</button>
+        </div>
+
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title">🍝 Pasta</span>
+                <span class="card-status status-error">⚠️ Non trovato sulla mappa</span>
+            </div>
+            <button class="btn btn-search" onclick="sendAction('run_pasta')">Cerca</button>
+        </div>
+
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title">🧈 Caseificio</span>
+                <span class="card-status status-error">⚠️ Non trovato sulla mappa</span>
+            </div>
+            <button class="btn btn-search" onclick="sendAction('run_dairy')">Cerca</button>
+        </div>
+
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title">🥓 Barbecue</span>
+                <span class="card-status status-error">⚠️ Non trovato sulla mappa</span>
+            </div>
+            <button class="btn btn-search" onclick="sendAction('run_bbq')">Cerca</button>
+        </div>
+    </div>
+
+    <div>
+        <div class="section-title">👥 Visitatori & Raccolto</div>
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title">🚶‍♂️ Visitatori</span>
+                <span class="card-status status-wait">💤 Nessun visitatore attivo</span>
+            </div>
+            <button class="btn btn-wait" onclick="sendAction('run_visitors')">Aggiorna</button>
+        </div>
+
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title">🌾 Grano</span>
+                <span class="card-status status-active">✅ Raccolto completato</span>
+            </div>
+            <button class="btn" onclick="sendAction('run_crops')">Riattiva</button>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        function sendAction(action) {
+            tg.sendData(action);
+            tg.close();
+        }
+    </script>
+</body>
+</html>
