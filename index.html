@@ -2,840 +2,227 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hay Day Master - Dual Grid Live</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Per la mia Michi ❤️</title>
     <style>
-        :root {
-            --bg-dark: #090503;
-            --card-bg: linear-gradient(135deg, #2c1a0e 0%, #150a04 100%);
-            --card-border: #704214;
-            --accent-gold: #f39c12;
-            --accent-green: #2ecc71;
-            --accent-orange: #e67e22;
-            --accent-blue: #3498db;
-            --text-main: #fff3e0;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            font-family: 'Nunito', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
         body {
-            background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at 50% -20%, #3a1d10 0%, #090503 80%);
-            background-attachment: fixed;
-            color: var(--text-main);
-            padding: 6px;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* Header ultra compatto */
-        .header {
-            text-align: center;
-            padding: 6px;
-            background: linear-gradient(135deg, #3d2817 0%, #150a04 100%);
-            border: 2px solid var(--accent-gold);
-            border-radius: 10px;
-            margin-bottom: 8px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.7);
-            animation: headerGlow 3s ease-in-out infinite alternate;
-        }
-
-        .header h1 {
-            font-size: 14px;
-            font-weight: 900;
-            color: var(--accent-gold);
-            letter-spacing: 0.5px;
-        }
-
-        .header p {
-            font-size: 8px;
-            color: #bcaaa4;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        /* Griglia principale a 2 colonne perfette: Sinistra Istanza 1, Destra Istanza 2 */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-        }
-
-        .instance-column {
+            background: radial-gradient(circle, #2b0514, #0d0206);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            margin: 0;
             display: flex;
             flex-direction: column;
-            gap: 5px;
-        }
-
-        /* Header colonna istanza */
-        .column-header {
-            font-size: 10px;
-            font-weight: 900;
-            background: rgba(243, 156, 18, 0.15);
-            border: 1px solid rgba(243, 156, 18, 0.4);
-            color: var(--accent-gold);
-            padding: 5px 4px;
-            border-radius: 6px;
-            text-align: center;
-            text-transform: uppercase;
-            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 3px;
-        }
-
-        .column-header.inst2 {
-            color: #3498db;
-            background: rgba(52, 152, 219, 0.15);
-            border-color: rgba(52, 152, 219, 0.4);
-        }
-
-        .gear-icon {
-            display: inline-block;
-            animation: spinGear 6s linear infinite;
-        }
-
-        /* Mini Card Compatta Animata */
-        .mini-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 5px 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-            transition: transform 0.1s;
-        }
-
-        .mini-card:active {
-            transform: scale(0.97);
-        }
-
-        .mini-card-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .mini-icon {
-            font-size: 14px;
-            animation: floatIcon 3s ease-in-out infinite alternate;
-        }
-
-        .mini-title {
-            font-size: 10px;
-            font-weight: 800;
-            color: var(--text-main);
-            white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-            margin-left: 4px;
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #f39c12;
-            box-shadow: 0 0 5px #f39c12;
-            animation: pulseDot 1.5s infinite;
-        }
-
-        .status-dot.active { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
-        .status-dot.idle { background: #95a5a6; box-shadow: none; animation: none; }
-
-        /* Pulsante super compatto */
-        .btn-mini {
-            width: 100%;
-            border: none;
-            padding: 3px;
-            border-radius: 5px;
-            font-size: 8px;
-            font-weight: 900;
-            color: #fff;
-            cursor: pointer;
-            text-transform: uppercase;
-            box-shadow: 0 2px 0 rgba(0,0,0,0.5);
-            transition: transform 0.1s;
-        }
-
-        .btn-mini:active {
-            transform: translateY(2px);
-            box-shadow: none;
-        }
-
-        .btn-orange { background: linear-gradient(180deg, #f39c12 0%, #d35400 100%); }
-        .btn-green { background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%); }
-        .btn-blue { background: linear-gradient(180deg, #3498db 0%, #2980b9 100%); }
-
-        /* Toast Notifica */
-        #toast {
-            visibility: hidden;
-            min-width: 180px;
-            background: linear-gradient(135deg, #f39c12, #c0392b);
-            color: #fff;
+            color: white;
             text-align: center;
-            border-radius: 10px;
-            padding: 8px;
-            position: fixed;
-            z-index: 100;
-            left: 50%;
-            bottom: -40px;
-            transform: translateX(-50%);
-            font-weight: 900;
-            font-size: 10px;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.8);
-            transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
-            opacity: 0;
+            position: relative;
         }
 
-        #toast.show {
-            visibility: visible;
-            bottom: 15px;
-            opacity: 1;
+        /* Testi fluttuanti sullo sfondo */
+        .floating-text {
+            position: absolute;
+            color: rgba(255, 105, 180, 0.15);
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: none;
+            white-space: nowrap;
+            animation: moveRandom 15s linear infinite;
         }
 
-        @keyframes spinGear {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        @keyframes moveRandom {
+            0% { transform: translateY(110vh) translateX(-50px) rotate(0deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-10vh) translateX(50px) rotate(20deg); opacity: 0; }
         }
 
-        @keyframes floatIcon {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-2px); }
+        /* Card centrale */
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 105, 180, 0.3);
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 0 50px rgba(255, 20, 147, 0.4);
+            max-width: 450px;
+            width: 90%;
+            z-index: 10;
+            animation: pulseCard 3s ease-in-out infinite;
         }
 
-        @keyframes pulseDot {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.6; }
+        @keyframes pulseCard {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(255, 20, 147, 0.3); }
+            50% { transform: scale(1.02); box-shadow: 0 0 60px rgba(255, 20, 147, 0.6); }
         }
 
-        @keyframes headerGlow {
-            0% { border-color: #f39c12; box-shadow: 0 3px 12px rgba(0,0,0,0.7); }
-            100% { border-color: #f1c40f; box-shadow: 0 3px 15px rgba(243, 156, 18, 0.4); }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff758c, #ff7eb3, #ff416c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 117, 140, 0.5);
+        }
+
+        p {
+            font-size: 18px;
+            color: #ffd1dc;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        /* Pulsanti */
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+            height: 60px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        #siBtn {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            color: white;
+        }
+        #siBtn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 25px rgba(255, 65, 108, 0.8);
+        }
+
+        #noBtn {
+            background-color: #4a4a4a;
+            color: #bbb;
+            position: absolute;
+        }
+
+        #message {
+            margin-top: 25px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ff9a9e;
+            min-height: 40px;
+            text-shadow: 0 0 10px rgba(255, 154, 158, 0.5);
+        }
+
+        /* Cuori ed elementi festosi */
+        .heart {
+            position: absolute;
+            color: #ff3366;
+            font-size: 24px;
+            user-select: none;
+            pointer-events: none;
+            animation: flyUp 4s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes flyUp {
+            0% { transform: translateY(105vh) scale(0.5) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.5) rotate(360deg); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>🌾 HAY DAY MASTER 🌾</h1>
-        <p>Dual Grid Live Animated</p>
-    </div>
-
-    <div class="dashboard-grid">
-
-        <div class="instance-column">
-            <div class="column-header">
-                <span class="gear-icon">⚙️</span> Mambo 1
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥣</span>
-                    <span class="mini-title">Impastatrice</span>
-                    <div class="status-dot"></div>
-                </div>
-                <button class="btn-mini btn-orange" onclick="azione('I1 - Impastatrice', 'Prepara')">Prepara</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥖</span>
-                    <span class="mini-title">Forno</span>
-                    <div class="status-dot active"></div>
-                </div>
-                <button class="btn-mini btn-green" onclick="azione('I1 - Forno', 'Raccogli')">Raccogli</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥧</span>
-                    <span class="mini-title">Pasticceria</span>
-                    <div class="status-dot"></div>
-                </div>
-                <button class="btn-mini btn-orange" onclick="azione('I1 - Pasticceria', 'Prepara')">Prepara</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🍝</span>
-                    <span class="mini-title">Macchina Pasta</span>
-                    <div class="status-dot"></div>
-                </div>
-                <button class="btn-mini btn-orange" onclick="azione('I1 - Pasta', 'Cerca')">Cerca</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🧀</span>
-                    <span class="mini-title">Caseificio</span>
-                    <div class="status-dot idle"></div>
-                </div>
-                <button class="btn-mini btn-blue" onclick="azione('I1 - Caseificio', 'Avvia')">Avvia</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🍖</span>
-                    <span class="mini-title">Barbecue</span>
-                    <div class="status-dot"></div>
-                </div>
-                <button class="btn-mini btn-orange" onclick="azione('I1 - Barbecue', 'Cerca')">Cerca</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🚶</span>
-                    <span class="mini-title">Visitatori</span>
-                    <div class="status-dot idle"></div>
-                </div>
-                <button class="btn-mini btn-blue" onclick="azione('I1 - Visitatori', 'Aggiorna')">Aggiorna</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🌾</span>
-                    <span class="mini-title">Semina Grano</span>
-                    <div class="status-dot active"></div>
-                </div>
-                <button class="btn-mini btn-green" onclick="azione('I1 - Grano', 'Riattiva')">Riattiva</button>
-            </div>
-        </div>
-
-
-        <div class="instance-column">
-            <div class="column-header inst2">
-                <span class="gear-icon">⚙️</span> Mambo 2.0
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥣</span>
-                    <span class="mini-title">Impastatrice</span>
-                    <div class="status-dot"></div>
-                </div>
-                <button class="btn-mini btn-orange" onclick="azione('I2 - Impastatrice', 'Prepara')">Prepara</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥖</span>
-                    <span class="mini-title">Forno</span>
-                    <div class="status-dot active"></div>
-                </div>
-                <button class="btn-mini btn-green" onclick="azione('I2 - Forno', 'Raccogli')">Raccogli</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥧</span>
-                    <span class="mini-title">Pasticceria</span>
-                    <div class="status-dot"></div>
-                </div>
-                <button class="btn-mini btn-orange" onclick="azione('I2 - Pasticceria', 'Prepara')">Prepara</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🍝</span>
-                    <span class="mini-title">Macchina Pasta</span>
-                    <div class="status-dot"></div>
-                </div>
-                <button class="btn-mini btn-orange" onclick="azione('I2 - Pasta', 'Cerca')">Cerca</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🧀</span>
-                    <span class="mini-title">Caseificio</span>
-                    <div class="status-dot idle"></div>
-                </div>
-                <button class="btn-mini btn-blue" onclick="azione('I2 - Caseificio', 'Avvia')">Avvia</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🍖</span>
-                    <span class="mini-title">Barbecue</span>
-                    <div class="status-dot"></div>
-                </div>
-                <button class="btn-mini btn-orange" onclick="azione('I2 - Barbecue', 'Cerca')">Cerca</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🚶</span>
-                    <span class="mini-title">Visitatori</span>
-                    <div class="status-dot idle"></div>
-                </div>
-                <button class="btn-mini btn-blue" onclick="azione('I2 - Visitatori', 'Aggiorna')">Aggiorna</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🌾</span>
-                    <span class="mini-title">Semina Grano</span>
-                    <div class="status-dot active"></div>
-                </div>
-                <button class="btn-mini btn-green" onclick="azione('I2 - Grano', 'Riattiva')">Riattiva</button>
-            </div>
-        </div>
-
-    </div>
-
-    <div id="toast">Comando inviato!</div>
-
+    <!-- Generatore automatico di sfondi romantici -->
     <script>
-        const tg = window.Telegram ? window.Telegram.WebApp : null;
-        if (tg) { tg.ready(); tg.expand(); }
+        const frasiSfondo = [
+            "Ti amo Michi ❤️", "Mi manchi tantissimo ✨", "Sei bellissima 😍", 
+            "Sei il mio battito 💓", "Meravigliosa ✨", "Sei tutto per me 🌹", 
+            "I tuoi occhi 😍", "La mia vita 💖", "Ti amo da impazzire 💕"
+        ];
 
-        function azione(struttura, tipo) {
-            if (tg && tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
-            }
-            mostraToast(struttura + ": " + tipo);
-        }
-
-        function mostraToast(msg) {
-            const t = document.getElementById("toast");
-            t.innerText = msg;
-            t.className = "show";
-            if (window.tTimeout) clearTimeout(window.tTimeout);
-            window.tTimeout = setTimeout(() => { t.className = ""; }, 1500);
+        for (let i = 0; i < 25; i++) {
+            const div = document.createElement('div');
+            div.classList.add('floating-text');
+            div.innerText = frasiSfondo[Math.floor(Math.random() * frasiSfondo.length)];
+            div.style.left = Math.random() * 100 + 'vw';
+            div.style.animationDuration = (Math.random() * 10 + 8) + 's';
+            div.style.animationDelay = (Math.random() * 5) + 's';
+            div.style.fontSize = (Math.random() * 15 + 16) + 'px';
+            document.body.appendChild(div);
         }
     </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hay Day Master - Live Real-Time Status</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --bg-dark: #090503;
-            --card-bg: linear-gradient(135deg, #2c1a0e 0%, #150a04 100%);
-            --card-border: #704214;
-            --accent-gold: #f39c12;
-            --accent-green: #2ecc71;
-            --accent-orange: #e67e22;
-            --accent-blue: #3498db;
-            --text-main: #fff3e0;
-            --text-sub: #bcaaa4;
-        }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            font-family: 'Nunito', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at 50% -20%, #3a1d10 0%, #090503 80%);
-            background-attachment: fixed;
-            color: var(--text-main);
-            padding: 6px;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* Header ultra compatto */
-        .header {
-            text-align: center;
-            padding: 6px;
-            background: linear-gradient(135deg, #3d2817 0%, #150a04 100%);
-            border: 2px solid var(--accent-gold);
-            border-radius: 10px;
-            margin-bottom: 8px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.7);
-        }
-
-        .header h1 {
-            font-size: 13px;
-            font-weight: 900;
-            color: var(--accent-gold);
-        }
-
-        .header p {
-            font-size: 8px;
-            color: var(--text-sub);
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        /* Griglia a 2 colonne */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-        }
-
-        .instance-column {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .column-header {
-            font-size: 9px;
-            font-weight: 900;
-            background: rgba(243, 156, 18, 0.15);
-            border: 1px solid rgba(243, 156, 18, 0.4);
-            color: var(--accent-gold);
-            padding: 4px;
-            border-radius: 6px;
-            text-align: center;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-        }
-
-        .column-header.inst2 {
-            color: #3498db;
-            background: rgba(52, 152, 219, 0.15);
-            border-color: rgba(52, 152, 219, 0.4);
-        }
-
-        .gear-icon {
-            display: inline-block;
-            animation: spinGear 6s linear infinite;
-        }
-
-        /* Mini Card con Stato in tempo reale */
-        .mini-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 5px 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-        }
-
-        .mini-card-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .mini-icon {
-            font-size: 13px;
-            animation: floatIcon 3s ease-in-out infinite alternate;
-        }
-
-        .mini-title {
-            font-size: 9px;
-            font-weight: 800;
-            color: var(--text-main);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-            margin-left: 4px;
-        }
-
-        /* Testo dello stato in tempo reale sotto il titolo */
-        .status-realtime {
-            font-size: 7.5px;
-            font-weight: 700;
-            color: var(--text-sub);
-            background: rgba(0, 0, 0, 0.4);
-            padding: 2px 5px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .status-realtime.working { color: #f39c12; border-color: rgba(243,156,18,0.3); }
-        .status-realtime.ready { color: #2ecc71; border-color: rgba(46,204,113,0.3); }
-        .status-realtime.idle { color: #95a5a6; }
-
-        /* Pulsante compatto */
-        .btn-mini {
-            width: 100%;
-            border: none;
-            padding: 3px;
-            border-radius: 5px;
-            font-size: 8px;
-            font-weight: 900;
-            color: #fff;
-            cursor: pointer;
-            text-transform: uppercase;
-            box-shadow: 0 2px 0 rgba(0,0,0,0.5);
-            transition: transform 0.1s;
-        }
-
-        .btn-mini:active {
-            transform: translateY(2px);
-            box-shadow: none;
-        }
-
-        .btn-orange { background: linear-gradient(180deg, #f39c12 0%, #d35400 100%); }
-        .btn-green { background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%); }
-        .btn-blue { background: linear-gradient(180deg, #3498db 0%, #2980b9 100%); }
-
-        /* Toast Notifica */
-        #toast {
-            visibility: hidden;
-            min-width: 180px;
-            background: linear-gradient(135deg, #f39c12, #c0392b);
-            color: #fff;
-            text-align: center;
-            border-radius: 10px;
-            padding: 8px;
-            position: fixed;
-            z-index: 100;
-            left: 50%;
-            bottom: -40px;
-            transform: translateX(-50%);
-            font-weight: 900;
-            font-size: 10px;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.8);
-            transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
-            opacity: 0;
-        }
-
-        #toast.show {
-            visibility: visible;
-            bottom: 15px;
-            opacity: 1;
-        }
-
-        @keyframes spinGear {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes floatIcon {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-2px); }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="header">
-        <h1>🌾 HAY DAY MASTER 🌾</h1>
-        <p>Monitoraggio Tempo Reale</p>
-    </div>
-
-    <div class="dashboard-grid">
-
-        <div class="instance-column">
-            <div class="column-header">
-                <span class="gear-icon">⚙️</span> Mambo 1
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥣</span>
-                    <span class="mini-title">Impastatrice</span>
-                </div>
-                <div class="status-realtime working" id="st-i1-imp">⏳ In attesa ingredienti</div>
-                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i1-imp', 'working', '⏳ Preparazione in corso...', 'I1 - Impastatrice avviata')">Prepara</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥖</span>
-                    <span class="mini-title">Forno</span>
-                </div>
-                <div class="status-realtime ready" id="st-i1-forno">🟢 Pronto da raccogliere</div>
-                <button class="btn-mini btn-green" onclick="aggiornaStato('st-i1-forno', 'ready', '🟢 Raccolto completato', 'I1 - Forno raccolto')">Raccogli</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥧</span>
-                    <span class="mini-title">Pasticceria</span>
-                </div>
-                <div class="status-realtime working" id="st-i1-past">⏳ In attesa prodotti</div>
-                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i1-past', 'working', '⏳ Sfornando pasticci...', 'I1 - Pasticceria avviata')">Prepara</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🍝</span>
-                    <span class="mini-title">Macchina Pasta</span>
-                </div>
-                <div class="status-realtime idle" id="st-i1-pasta">⚠️ Non trovata / Ferma</div>
-                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i1-pasta', 'working', '🔍 Ricerca in corso...', 'I1 - Ricerca pasta')">Cerca</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🧀</span>
-                    <span class="mini-title">Caseificio</span>
-                </div>
-                <div class="status-realtime idle" id="st-i1-caseo">⚪ Inattivo / Spento</div>
-                <button class="btn-mini btn-blue" onclick="aggiornaStato('st-i1-caseo', 'working', '🧀 Producendo formaggio...', 'I1 - Caseificio avviato')">Avvia</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🍖</span>
-                    <span class="mini-title">Barbecue</span>
-                </div>
-                <div class="status-realtime idle" id="st-i1-barb">⚠️ Non trovato</div>
-                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i1-barb', 'working', '🔍 Ricerca barbecue...', 'I1 - Ricerca barbecue')">Cerca</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🚶</span>
-                    <span class="mini-title">Visitatori</span>
-                </div>
-                <div class="status-realtime idle" id="st-i1-vis">💤 Nessun visitatore</div>
-                <button class="btn-mini btn-blue" onclick="aggiornaStato('st-i1-vis', 'ready', '🚶 Servendo visitatore...', 'I1 - Visitatori aggiornati')">Aggiorna</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🌾</span>
-                    <span class="mini-title">Semina Grano</span>
-                </div>
-                <div class="status-realtime ready" id="st-i1-grano">✅ Raccolto pronto</div>
-                <button class="btn-mini btn-green" onclick="aggiornaStato('st-i1-grano', 'working', '🌾 Nuova semina avviata', 'I1 - Grano seminato')">Riattiva</button>
-            </div>
+    <div class="card">
+        <h1>Per la mia Michi ❤️</h1>
+        <p>Una domanda fondamentale per la ragazza più spettacolare, dolce e bella dell'universo...<br><b>Mi ami vero?</b></p>
+        
+        <div class="btn-container">
+            <button id="siBtn" onclick="haDettoSi()">Sì, immensamente! 🥰</button>
+            <button id="noBtn" onmouseover="muoviNo()" onclick="muoviNo()">No 🙈</button>
         </div>
-
-
-        <div class="instance-column">
-            <div class="column-header inst2">
-                <span class="gear-icon">⚙️</span> Mambo 2.0
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥣</span>
-                    <span class="mini-title">Impastatrice</span>
-                </div>
-                <div class="status-realtime working" id="st-i2-imp">⏳ In attesa ingredienti</div>
-                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i2-imp', 'working', '⏳ Preparazione in corso...', 'I2 - Impastatrice avviata')">Prepara</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥖</span>
-                    <span class="mini-title">Forno</span>
-                </div>
-                <div class="status-realtime ready" id="st-i2-forno">🟢 Pronto da raccogliere</div>
-                <button class="btn-mini btn-green" onclick="aggiornaStato('st-i2-forno', 'ready', '🟢 Raccolto completato', 'I2 - Forno raccolto')">Raccogli</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🥧</span>
-                    <span class="mini-title">Pasticceria</span>
-                </div>
-                <div class="status-realtime working" id="st-i2-past">⏳ In attesa prodotti</div>
-                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i2-past', 'working', '⏳ Sfornando pasticci...', 'I2 - Pasticceria avviata')">Prepara</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🍝</span>
-                    <span class="mini-title">Macchina Pasta</span>
-                </div>
-                <div class="status-realtime idle" id="st-i2-pasta">⚠️ Non trovata / Ferma</div>
-                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i2-pasta', 'working', '🔍 Ricerca in corso...', 'I2 - Ricerca pasta')">Cerca</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🧀</span>
-                    <span class="mini-title">Caseificio</span>
-                </div>
-                <div class="status-realtime idle" id="st-i2-caseo">⚪ Inattivo / Spento</div>
-                <button class="btn-mini btn-blue" onclick="aggiornaStato('st-i2-caseo', 'working', '🧀 Producendo formaggio...', 'I2 - Caseificio avviato')">Avvia</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🍖</span>
-                    <span class="mini-title">Barbecue</span>
-                </div>
-                <div class="status-realtime idle" id="st-i2-barb">⚠️ Non trovato</div>
-                <button class="btn-mini btn-orange" onclick="aggiornaStato('st-i2-barb', 'working', '🔍 Ricerca barbecue...', 'I2 - Ricerca barbecue')">Cerca</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🚶</span>
-                    <span class="mini-title">Visitatori</span>
-                </div>
-                <div class="status-realtime idle" id="st-i2-vis">💤 Nessun visitatore</div>
-                <button class="btn-mini btn-blue" onclick="aggiornaStato('st-i2-vis', 'ready', '🚶 Servendo visitatore...', 'I2 - Visitatori aggiornati')">Aggiorna</button>
-            </div>
-
-            <div class="mini-card">
-                <div class="mini-card-top">
-                    <span class="mini-icon">🌾</span>
-                    <span class="mini-title">Semina Grano</span>
-                </div>
-                <div class="status-realtime ready" id="st-i2-grano">✅ Raccolto pronto</div>
-                <button class="btn-mini btn-green" onclick="aggiornaStato('st-i2-grano', 'working', '🌾 Nuova semina avviata', 'I2 - Grano seminato')">Riattiva</button>
-            </div>
-        </div>
-
+        
+        <div id="message"></div>
     </div>
-
-    <div id="toast">Comando inviato!</div>
 
     <script>
-        const tg = window.Telegram ? window.Telegram.WebApp : null;
-        if (tg) { tg.ready(); tg.expand(); }
+        const complimenti = [
+            "Ti amo da morire Michi! ❤️",
+            "Sei la cosa più bella che mi sia mai capita! ✨",
+            "Mi manchi ogni singolo secondo! 🥺",
+            "Hai un sorriso che illumina tutto il mondo! 😍",
+            "Sei pazzamente stupenda! 💖",
+            "Il mio cuore batte solo per te! 💓",
+            "Sei la mia favola preferita! 🌹"
+        ];
 
-        function aggiornaStato(elementId, tipoStato, testoStato, messaggioToast) {
-            if (tg && tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('medium');
-            }
-
-            const elem = document.getElementById(elementId);
-            if (elem) {
-                elem.className = "status-realtime " + tipoStato;
-                elem.innerText = testoStato;
-            }
-
-            mostraToast(messaggioToast);
+        function muoviNo() {
+            const btnNo = document.getElementById('noBtn');
+            const x = Math.random() * (window.innerWidth - 150);
+            const y = Math.random() * (window.innerHeight - 100);
+            btnNo.style.position = 'fixed';
+            btnNo.style.left = x + 'px';
+            btnNo.style.top = y + 'px';
         }
 
-        function mostraToast(msg) {
-            const t = document.getElementById("toast");
-            t.innerText = msg;
-            t.className = "show";
-            if (window.tTimeout) clearTimeout(window.tTimeout);
-            window.tTimeout = setTimeout(() => { t.className = ""; }, 1500);
+        function haDettoSi() {
+            const msgBox = document.getElementById('message');
+            document.getElementById('noBtn').style.display = 'none';
+            document.getElementById('siBtn').style.transform = 'scale(1.2)';
+            
+            // Effetto sequenza complimenti magica
+            let index = 0;
+            msgBox.innerHTML = complimenti[0];
+            setInterval(() => {
+                index = (index + 1) % complimenti.length;
+                msgBox.innerHTML = complimenti[index];
+            }, 2500);
+
+            // Scatena pioggia massiccia di cuori
+            for(let i = 0; i < 50; i++) {
+                creaCuoreFesta();
+            }
         }
+
+        function creaCuoreFesta() {
+            const cuore = document.createElement('div');
+            cuore.classList.add('heart');
+            cuore.innerHTML = ['❤️', '💖', '💘', '✨', '🌹', '💕'][Math.floor(Math.random() * 6)];
+            cuore.style.left = Math.random() * window.innerWidth + 'px';
+            cuore.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            cuore.style.fontSize = (Math.random() * 20 + 20) + 'px';
+            document.body.appendChild(cuore);
+            
+            setTimeout(() => {
+                cuore.remove();
+            }, 5000);
+        }
+
+        // Generazione continua di cuoricini di sottofondo
+        setInterval(creaCuoreFesta, 300);
     </script>
+
 </body>
 </html>
