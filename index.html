@@ -1,6 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define NOMINMAX
 #include "BotEngine.h"
+#include "SuperBotBrain.h"
+// SUPER BOT BRAIN - PIANIFICATORE INTEGRATO: non modifica FindImage/ADB.
 #include "Language.h"
 #include "Discord.h"
 #include "tesseract_ocr.h"
@@ -64,6 +66,7 @@ struct FarmState {
 
 inline FarmState g_FarmStates[10];
 inline long long g_DashboardMessageId[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static int g_FactoryCycle[10] = { 0 };
 
 // --- 1. FUNZIONE URL ENCODE ---
 inline std::string UrlEncode(const std::string& value) {
@@ -120,7 +123,6 @@ inline void UpdateMasterDashboard(int instanceId) {
     std::string caseificioClean = CleanStatusText(st.caseificio);
     std::string barbecueClean = CleanStatusText(st.barbecue);
     std::string pasticciClean = CleanStatusText(st.pasticci);
-    std::string visitatoriClean = CleanStatusText(st.visitatori);
     std::string raccoltoClean = CleanStatusText(st.raccolto);
 
     std::string text = "🌾 *HAY DAY MASTER DASHBOARD* 🌾\n\n"
@@ -132,14 +134,12 @@ inline void UpdateMasterDashboard(int instanceId) {
         "• 🧈 *Caseificio (Burro):* " + caseificioClean + "\n"
         "• 🥓 *Barbecue (Pasticcio):* " + barbecueClean + "\n"
         "• 🥧 *Pasticci:* " + pasticciClean + "\n\n"
-        "👥 *VISITATORI*\n"
-        "• 🚶‍♂️ *Stato:* " + visitatoriClean + "\n\n"
         "🌱 *RACCOLTO & PIANTA*\n"
         "• 🌾 *Grano:* " + raccoltoClean + "\n"
         "━━━━━━━━━━━━━━━━━━━━━━━\n"
         "_Aggiornato in tempo reale_";
 
-    std::string replyMarkup = "{\"inline_keyboard\":[[{\"text\":\"🥖 Forno\",\"callback_data\":\"run_bread\"},{\"text\":\"🍝 Pasta\",\"callback_data\":\"run_pasta\"}],[{\"text\":\"🧈 Caseificio\",\"callback_data\":\"run_dairy\"},{\"text\":\"🥓 Barbecue\",\"callback_data\":\"run_bbq\"}],[{\"text\":\"🥧 Pasticci\",\"callback_data\":\"run_pastry\"},{\"text\":\"👥 Visitatori\",\"callback_data\":\"run_visitors\"}],[{\"text\":\"🌾 Raccolgi / Pianta (Grano)\",\"callback_data\":\"run_crops\"},{\"text\":\"🛑 Stop / Pausa\",\"callback_data\":\"bot_pause\"}]]}";
+    std::string replyMarkup = "{\"inline_keyboard\":[[{\"text\":\"🥖 Forno\",\"callback_data\":\"run_bread\"},{\"text\":\"🍝 Pasta\",\"callback_data\":\"run_pasta\"}],[{\"text\":\"🧈 Caseificio\",\"callback_data\":\"run_dairy\"},{\"text\":\"🥓 Barbecue\",\"callback_data\":\"run_bbq\"}],[{\"text\":\"🥧 Pasticci\",\"callback_data\":\"run_pastry\"}],[{\"text\":\"🌾 Raccolgi / Pianta (Grano)\",\"callback_data\":\"run_crops\"},{\"text\":\"🛑 Stop / Pausa\",\"callback_data\":\"bot_pause\"}]]}";
 
     std::string fullUrl = "";
     if (g_DashboardMessageId[instanceId] != 0) {
@@ -214,7 +214,6 @@ bool RunFactoryProduction(
     std::string& farmState
 );
 void RunActiveFactories(int instanceId);
-void CheckAndMakeTownVisitors(int instanceId);
 void HandleReviveHeartbeat(int instanceId);
 // --- POLLING DEGLI AGGIORNAMENTI TELEGRAM ---
 inline std::string CheckTelegramUpdates() {
@@ -2275,30 +2274,7 @@ void RunPremiumBot(int instanceId) {
 
             bot.currentAccountIndex = i;
             processedOneSingleAccount = true; 
-            // =========================================================================
-       // 1. SHOP FULL (TIME) CONTROL
-       // =========================================================================
-            if (bot.accounts[i].isShopFullStuck) {
-                auto now = std::chrono::steady_clock::now();
-                auto elapsedMins = std::chrono::duration_cast<std::chrono::minutes>(now - bot.accounts[i].lastShopCheckTime).count();
-
-                if (elapsedMins < 2) {
-                    if (isSingleAccountMode) {
-                        int waitSecs = 120 - std::chrono::duration_cast<std::chrono::seconds>(now - bot.accounts[i].lastShopCheckTime).count();
-                        AddLog(instanceId, std::string(Tr("Waiting for the advertisement cooldown: ")) + std::to_string(waitSecs) + "s", ImVec4(1, 0.5f, 0, 1));
-                        for (int w = 0; w < waitSecs; w++) {
-                            if (!bot.isRunning) break;
-                            bot.statusText = std::string(Tr("Advertisement cooldown: ")) + std::to_string(waitSecs - w) + "s";
-                            std::this_thread::sleep_for(std::chrono::seconds(1));
-                        }
-                    }
-                    else {
-                        AddLog(instanceId, Tr("Shop is full for this account. Moving to the next account..."), ImVec4(1, 0.2f, 0.2f, 1));
-                        continue;
-                    }
-                }
-            }
-
+            // SHOP/SALES: ignorato dal nuovo Brain. Nessuna vendita automatica.
             // --- WATCHDOG BASATO SU STALLO REALE (5 CICLI A VUOTO) ---
             {
                 static std::map<int, int> stuckCounterMap;
@@ -2365,10 +2341,6 @@ void RunPremiumBot(int instanceId) {
                     AddLog(instanceId, "Telegram: Forzato avvio Pasticci!", ImVec4(0, 1, 0, 1));
                     RunFactoryProduction(instanceId, "fornopasticci.png", "fornopasticciaperto.png", "pasticcio_finito.png", "pasticcio.png", 3, "FORNO PASTICI", "✅ Pasticcio avviato", g_FarmStates[instanceId].pasticci);
                 }
-                else if (cmd == "run_visitors") {
-                    AddLog(instanceId, "Telegram: Forzato avvio Visitatori!", ImVec4(0, 1, 0, 1));
-                    CheckAndMakeTownVisitors(instanceId);
-                }
                 else if (cmd == "bot_pause") {
                     AddLog(instanceId, "Telegram: Bot in pausa da remoto!", ImVec4(1, 0, 0, 1));
                     return; // Interrompe il ciclo
@@ -2381,11 +2353,23 @@ void RunPremiumBot(int instanceId) {
             else if (bot.testCropMode == 2) currentCropTime = 600;
             else if (bot.testCropMode == 3) currentCropTime = 1200;
             else if (bot.testCropMode == 4) currentCropTime = 1800;
-            // Esecuzione delle produzioni tramite il nuovo controller ciclico
+            // SUPER BOT BRAIN: un solo gruppo di fabbriche per ciclo.
+            // Il contatore viene incrementato una sola volta per questo passaggio.
+            const long long brainCycle = SuperBotBrain::BeginCycle(instanceId);
+            AddLog(instanceId, "SUPER BRAIN: ciclo " + std::to_string(brainCycle) +
+                " | gruppo " + std::to_string(SuperBotBrain::CurrentGroup(instanceId)));
+
+            // Il Brain prepara il piano delle richieste eventualmente registrate.
+            // Se non ci sono richieste registrate, le fabbriche continuano a usare
+            // esclusivamente il riconoscimento immagini già presente.
+            const auto brainPlan = SuperBotBrain::BuildPlan(instanceId);
+            AddLog(instanceId, "SUPER BRAIN: passi piano = " +
+                std::to_string(brainPlan.size()));
+
+            // Esecuzione delle produzioni tramite il controller ciclico a 3 gruppi.
+            g_FactoryCycle[instanceId] = (int)brainCycle - 1;
             RunActiveFactories(instanceId);
 
-            // Gestione dei visitatori a fine ciclo
-            CheckAndMakeTownVisitors(instanceId);
             // Aggiorna il timer di attività a fine ciclo
             {
                 static std::map<int, std::chrono::steady_clock::time_point> lastActivityTimeMap;
@@ -2399,22 +2383,12 @@ void RunPremiumBot(int instanceId) {
 
                 if (remaining > 0) {
                     AddLog(instanceId, std::string(Tr("Waiting for growth (")) + std::to_string(remaining) + Tr("s)..."), ImVec4(1, 1, 0, 1));
-                    // 🔥 1. CONTROLLO VISITATORI ALL'AVVIO (Unico e sicuro)
-                    AddLog(instanceId, "Controllo visitatori in corso...");
-                    CheckAndMakeTownVisitors(instanceId);
-
                     for (int t = 0; t < remaining; t++) {
                         if (!bot.isRunning) return;
                         bot.statusText = std::string(Tr("Waiting Slot ")) + std::to_string(i + 1) + ": " + std::to_string(remaining - t) + "s";
 
                         if (t > 0 && (t % bot.reviveCheckInterval == 0)) {
                             HandleReviveHeartbeat(instanceId);
-                        }
-
-                        // 🔥 2. CONTROLLO PERIODICO (Portato a 60 secondi per dare respiro all'emulatore)
-                        if (t > 0 && t % 60 == 0) {
-                            AddLog(instanceId, "Controllo visitatori periodico in corso...");
-                            CheckAndMakeTownVisitors(instanceId);
                         }
 
                         std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -2520,21 +2494,8 @@ void RunPremiumBot(int instanceId) {
                 }
             }
            
-            if (bot.accounts[i].isShopFullStuck) {
-                bot.statusText = Tr("Checking advertisement availability...");
-                AddLog(instanceId, Tr("Sales are paused for this account. Checking the shop..."), ImVec4(1, 0.5f, 0, 1));
-
-             
-                RunSalesCycle(instanceId, i, true);
-
-                if (bot.accounts[i].isShopFullStuck) {
-                    AddLog(instanceId, Tr("Advertisement is still on cooldown. Sales remain paused."), ImVec4(1, 0.2f, 0.2f, 1));
-                    continue;
-                }
-                else {
-                    AddLog(instanceId, Tr("Advertisement is available. Resuming normal operation."), ImVec4(0, 1, 0, 1));
-                }
-            }
+            // SHOP/SALES: completamente ignorato dal Brain.
+            // Nessun controllo di shop pieno puo' bloccare il ciclo.
 
             bool outOfSeeds = false;
             // =========================================================================
@@ -3016,8 +2977,8 @@ void RunPremiumBot(int instanceId) {
                 bot.statusText = Tr("Emergency Plant...");
                 TryPlant();
 
-                bot.statusText = Tr("Emergency Sales...");
-                RunSalesCycle(instanceId, i, true);
+                bot.statusText = Tr("No Automatic Sales");
+                AddLog(instanceId, "SUPER BRAIN: silo pieno -> nessuna vendita automatica.", ImVec4(1, 0.6f, 0, 1));
 
                 AddLog(instanceId, Tr("Space freed. Resuming harvest after emergency actions..."), ImVec4(0.8f, 0.4f, 1.0f, 1.0f));
                 bot.statusText = Tr("Resuming Harvest...");
@@ -3047,10 +3008,10 @@ void RunPremiumBot(int instanceId) {
                 int retryHarvestStatus = TryHarvest();
 
                 if (retryHarvestStatus == 2) {
-                    bot.statusText = Tr("Emergency Sales...");
-                    g_FarmStates[instanceId].raccolto = "⚠️ Silo pieno (Retry)! Vendita...";
+                    bot.statusText = Tr("No Automatic Sales");
+                    g_FarmStates[instanceId].raccolto = "⚠️ Silo pieno: nessuna vendita automatica.";
                     UpdateMasterDashboard(instanceId);
-                    RunSalesCycle(instanceId, i, true);
+                    AddLog(instanceId, "SUPER BRAIN: retry raccolto senza vendita.", ImVec4(1, 0.6f, 0, 1));
                     retryHarvestStatus = TryHarvest();
                 }
 
@@ -3067,29 +3028,10 @@ void RunPremiumBot(int instanceId) {
             bot.accounts[i].lastPlantTime = std::chrono::steady_clock::now();
             bot.accounts[i].isFirstRun = false;
 
+            // VENDITE AUTOMATICHE DISATTIVATE: il Brain non vende mai da solo.
+            // I contatori legacy vengono lasciati intatti per compatibilita' con la configurazione.
             if (bot.enableRandomSaleCycle) {
-                if (bot.accounts[i].targetCyclesBeforeSale <= 0) {
-                    bot.accounts[i].targetCyclesBeforeSale = (rand() % 3) + 1;
-                }
-
-                bot.accounts[i].currentCyclesWithoutSale++;
-
-                if (bot.accounts[i].currentCyclesWithoutSale >= bot.accounts[i].targetCyclesBeforeSale) {
-                    AddLog(instanceId, std::string(Tr("Random sale cycle started: ")) + std::to_string(bot.accounts[i].currentCyclesWithoutSale) + "/" + std::to_string(bot.accounts[i].targetCyclesBeforeSale), ImVec4(0.8f, 0.8f, 0.2f, 1.0f));
-                    bot.statusText = Tr("Checking Sales...");
-                    RunSalesCycle(instanceId, i, false);
-
-                    bot.accounts[i].currentCyclesWithoutSale = 0;
-                    bot.accounts[i].targetCyclesBeforeSale = (rand() % 3) + 1;
-                }
-                else {
-                    AddLog(instanceId, std::string(Tr("Skipping this sale cycle: ")) + std::to_string(bot.accounts[i].currentCyclesWithoutSale) + "/" + std::to_string(bot.accounts[i].targetCyclesBeforeSale), ImVec4(0.5f, 0.7f, 0.5f, 1.0f));
-                    bot.statusText = Tr("Skipped Sales (Random)");
-                }
-            }
-            else {
-                bot.statusText = Tr("Checking Sales...");
-                RunSalesCycle(instanceId, i, false);
+                AddLog(instanceId, "SUPER BRAIN: random sale disabilitata.", ImVec4(0.2f, 1.0f, 0.6f, 1.0f));
             }
 
             AddLog(instanceId, Tr("Account Cycle Done. Moving to next..."), ImVec4(0.5f, 0.5f, 0.5f, 1));
@@ -3779,131 +3721,6 @@ inline MatchResult FindAnyCross(int instanceId, cv::Mat& currentScreen, float th
 }
 
 // ==========================================
-// 1. LOGICA CITTÀ (VISITATORI)
-// ==========================================
-void CheckAndMakeTownVisitors(int instanceId) {
-    ScopedTimer timer(instanceId, "CheckAndMakeTownVisitors");
-    AddLog(instanceId, "VISITATORI: Inizio ricerca con iconabianca...");
-
-    g_FarmStates[instanceId].visitatori = "🔍 Ricerca visitatori in corso...";
-    UpdateMasterDashboard(instanceId);
-
-    auto startTime = std::chrono::steady_clock::now();
-    bool visitorFound = false;
-    MatchResult visitorRes;
-    std::string foundVisitorFile = "";
-
-    // Cerca attivamente per 5 secondi
-    while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count() < 5000) {
-        cv::Mat screen = CaptureInstanceScreen(instanceId, kAdbPath, g_Bots[instanceId].adbSerial);
-        if (!screen.empty()) {
-            std::string visitorFiles[] = { "tilly.png" , "greg.png", "joan.png", "mary.png", "panzone.png", "iconabianca.png" };
-
-            for (int v = 0; v < 6; v++) {
-                visitorRes = FindImage(screen, visitorFiles[v], 0.63f, true, 1.0f, true);
-
-                if (visitorRes.found) {
-                    foundVisitorFile = visitorFiles[v];
-                    visitorFound = true;
-                    break;
-                }
-            }
-
-            if (visitorFound) break;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
-
-    if (visitorFound) {
-        AddLog(instanceId, "VISITATORI " + foundVisitorFile + " TROVATO! Apro il pannello...", ImVec4(0, 1, 0, 1));
-        g_FarmStates[instanceId].visitatori = "✨ Trovato: *" + foundVisitorFile + "*";
-        UpdateMasterDashboard(instanceId);
-
-        AdbTap(instanceId, visitorRes.x, visitorRes.y);
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-
-        cv::Mat checkScreen = CaptureInstanceScreen(instanceId, kAdbPath, g_Bots[instanceId].adbSerial);
-        MatchResult crossRes = FindAnyCross(instanceId, checkScreen, 0.63f);
-        if (crossRes.found) {
-            AddLog(instanceId, "VISITATORI STOP: Rilevata croce rossa anomala (cliccato su edificio errato), chiudo subito!");
-            g_FarmStates[instanceId].visitatori = "⚠️ Chiuso pop-up errato";
-            UpdateMasterDashboard(instanceId);
-            AdbTap(instanceId, crossRes.x, crossRes.y);
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            return;
-        }
-
-        MatchResult wheatRes = FindImage(checkScreen, "grano.png", 0.65f, true, 1.0f, false);
-        MatchResult breadRes = FindImage(checkScreen, "panee.png", 0.65f, true, 1.0f, false);
-
-        if (wheatRes.found || breadRes.found) {
-            std::string itemName = wheatRes.found ? "Grano" : "Pane";
-            AddLog(instanceId, "RICHIESTA CORRETTA (" + itemName + ")! Insisto sul tasto SÌ finché non lo prende... 💰", ImVec4(0, 1, 0, 1));
-
-            g_FarmStates[instanceId].visitatori = "✅ Accettato (" + foundVisitorFile + " -> " + itemName + ")";
-            UpdateMasterDashboard(instanceId);
-
-            bool confirmed = false;
-            for (int attempt = 0; attempt < 4; attempt++) {
-                cv::Mat confirmScreen = CaptureInstanceScreen(instanceId, kAdbPath, g_Bots[instanceId].adbSerial);
-                MatchResult yesRes = FindImage(confirmScreen, "yes_here_you_go.png", 0.55f, true, 1.0f, false);
-
-                if (yesRes.found) {
-                    AddLog(instanceId, "Trovato tasto SÌ, lo premo!");
-                    AdbTap(instanceId, yesRes.x, yesRes.y);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
-                    confirmed = true;
-                    break;
-                }
-                else {
-                    AddLog(instanceId, "Tasto SÌ non ancora rilevato, riprovo (" + std::to_string(attempt + 1) + "/4)...");
-                    std::this_thread::sleep_for(std::chrono::milliseconds(600));
-                }
-            }
-
-            if (!confirmed) {
-                AddLog(instanceId, "⚠️ Tasto SÌ non trovato visivamente dopo 4 tentativi, salto.", ImVec4(1, 0.5f, 0, 1));
-            }
-        }
-        else {
-            AddLog(instanceId, "RICHIESTA ERRATA! Insisto sul tasto NO finché non lo preme... ❌", ImVec4(1, 0.3f, 0.3f, 1));
-
-            g_FarmStates[instanceId].visitatori = "❌ Rifiutato (" + foundVisitorFile + ")";
-            UpdateMasterDashboard(instanceId);
-
-            bool refused = false;
-            for (int attempt = 0; attempt < 4; attempt++) {
-                cv::Mat refuseScreen = CaptureInstanceScreen(instanceId, kAdbPath, g_Bots[instanceId].adbSerial);
-                MatchResult noRes = FindImage(refuseScreen, "no_sorry.png", 0.55f, true, 1.0f, false);
-
-                if (noRes.found) {
-                    AddLog(instanceId, "Trovato tasto NO, lo premo!");
-                    AdbTap(instanceId, noRes.x, noRes.y);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
-                    refused = true;
-                    break;
-                }
-                else {
-                    AddLog(instanceId, "Tasto NO non ancora rilevato, riprovo (" + std::to_string(attempt + 1) + "/4)...");
-                    std::this_thread::sleep_for(std::chrono::milliseconds(600));
-                }
-            }
-
-            if (!refused) {
-                AddLog(instanceId, "⚠️ Tasto NO non trovato visivamente dopo 4 tentativi, salto.", ImVec4(1, 0.5f, 0, 1));
-            }
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-    else {
-        g_FarmStates[instanceId].visitatori = "💤 Nessun visitatore attivo";
-        UpdateMasterDashboard(instanceId);
-    }
-}
-
-// ==========================================
 // CONTROLLO E RIPRISTINO HAY DAY / MEMU
 // ==========================================
 bool CheckAndRestoreGame(int instanceId) {
@@ -4040,7 +3857,6 @@ void CheckAndReturnHome(int instanceId) {
 
 
 
-static int g_FactoryCycle[10] = { 0 };
 
 static std::string g_SuperHubState[10];
 
@@ -7784,29 +7600,15 @@ void RunActiveFactories(
 
 {
 
-    if (instanceId < 0 ||
-
-        instanceId >= 10)
-
+    if (instanceId < 0 || instanceId >= 10)
         return;
 
+    // Nuovo ciclo ad ogni passaggio: 1,2,3,1,2,3...
+    // In questo modo i tre gruppi non vengono mai eseguiti insieme.
+    int currentCycle = g_FactoryCycle[instanceId] + 1;
+    if (currentCycle <= 0) currentCycle = 1;
 
-
-    int currentCycle =
-
-        (g_FactoryCycle[instanceId] > 0)
-
-        ? g_FactoryCycle[instanceId]
-
-        : 1;
-
-
-
-    RunActiveFactories(
-
-        instanceId,
-
-        currentCycle);
+    RunActiveFactories(instanceId, currentCycle);
 
 }
 
