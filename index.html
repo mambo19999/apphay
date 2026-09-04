@@ -1,28 +1,295 @@
+// ==========================================
+// FUNZIONE DI SUPPORTO CON DOPPIO CONTROLLO
+// ==========================================
+inline MatchResult FindAnyCross(int instanceId, cv::Mat& currentScreen, float threshold) {
+    // 1. Primo controllo immediato sulla schermata attuale
+    MatchResult res = FindImage(currentScreen, "Cross.png", threshold, true, 1.0f, false);
+    if (res.found) return res;
+
+    res = FindImage(currentScreen, "cross1.png", threshold, true, 1.0f, false);
+    if (res.found) return res;
+
+    // Aggiunta del controllo per la nuova immagine cross2.png
+    res = FindImage(currentScreen, "cross2.png", threshold, true, 1.0f, false);
+    if (res.found) return res;
+
+    // Eventuale resto della funzione (se presente con secondo controllo/ritorno)...
+    // 2. Secondo controllo rapido: attendiamo un istante e ri-catturiamo lo schermo al volo
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    BotInstance& bot = g_Bots[instanceId];
+    cv::Mat freshScreen = CaptureInstanceScreen(instanceId, kAdbPath, bot.adbSerial);
+    if (freshScreen.empty()) return res;
+
+    res = FindImage(freshScreen, "Cross.png", threshold, true, 1.0f, false);
+    if (res.found) return res;
+    res = FindImage(freshScreen, "cross1.png", threshold, true, 1.0f, false);
+
+    return res;
+}
+
+// ==========================================
+// 1. LOGICA CITTÀ (VISITATORI)
+// ==========================================
+void CheckAndMakeTownVisitors(int instanceId) {
+    ScopedTimer timer(instanceId, "CheckAndMakeTownVisitors");
+    AddLog(instanceId, "VISITATORI: Inizio ricerca con iconabianca...");
+
+    g_FarmStates[instanceId].visitatori = "🔍 Ricerca visitatori in corso...";
+    UpdateMasterDashboard(instanceId);
+
+    auto startTime = std::chrono::steady_clock::now();
+    bool visitorFound = false;
+    MatchResult visitorRes;
+    std::string foundVisitorFile = "";
+
+    // Cerca attivamente per 5 secondi
+    while (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count() < 5000) {
+        cv::Mat screen = CaptureInstanceScreen(instanceId, kAdbPath, g_Bots[instanceId].adbSerial);
+        if (!screen.empty()) {
+            std::string visitorFiles[] = { "tilly.png" , "greg.png", "joan.png", "mary.png", "panzone.png", "iconabianca.png" };
+
+            for (int v = 0; v < 6; v++) {
+                visitorRes = FindImage(screen, visitorFiles[v], 0.63f, true, 1.0f, true);
+
+                if (visitorRes.found) {
+                    foundVisitorFile = visitorFiles[v];
+                    visitorFound = true;
+                    break;
+                }
+            }
+
+            if (visitorFound) break;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
+    if (visitorFound) {
+        AddLog(instanceId, "VISITATORI " + foundVisitorFile + " TROVATO! Apro il pannello...", ImVec4(0, 1, 0, 1));
+        g_FarmStates[instanceId].visitatori = "✨ Trovato: *" + foundVisitorFile + "*";
+        UpdateMasterDashboard(instanceId);
+
+        AdbTap(instanceId, visitorRes.x, visitorRes.y);
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
+        cv::Mat checkScreen = CaptureInstanceScreen(instanceId, kAdbPath, g_Bots[instanceId].adbSerial);
+        MatchResult crossRes = FindAnyCross(instanceId, checkScreen, 0.63f);
+        if (crossRes.found) {
+            AddLog(instanceId, "VISITATORI STOP: Rilevata croce rossa anomala (cliccato su edificio errato), chiudo subito!");
+            g_FarmStates[instanceId].visitatori = "⚠️ Chiuso pop-up errato";
+            UpdateMasterDashboard(instanceId);
+            AdbTap(instanceId, crossRes.x, crossRes.y);
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            return;
+        }
+
+        MatchResult wheatRes = FindImage(checkScreen, "grano.png", 0.65f, true, 1.0f, false);
+        MatchResult breadRes = FindImage(checkScreen, "panee.png", 0.65f, true, 1.0f, false);
+
+        if (wheatRes.found || breadRes.found) {
+            std::string itemName = wheatRes.found ? "Grano" : "Pane";
+            AddLog(instanceId, "RICHIESTA CORRETTA (" + itemName + ")! Insisto sul tasto SÌ finché non lo prende... 💰", ImVec4(0, 1, 0, 1));
+
+            g_FarmStates[instanceId].visitatori = "✅ Accettato (" + foundVisitorFile + " -> " + itemName + ")";
+            UpdateMasterDashboard(instanceId);
+
+            bool confirmed = false;
+            for (int attempt = 0; attempt < 4; attempt++) {
+                cv::Mat confirmScreen = CaptureInstanceScreen(instanceId, kAdbPath, g_Bots[instanceId].adbSerial);
+                MatchResult yesRes = FindImage(confirmScreen, "yes_here_you_go.png", 0.55f, true, 1.0f, false);
+
+                if (yesRes.found) {
+                    AddLog(instanceId, "Trovato tasto SÌ, lo premo!");
+                    AdbTap(instanceId, yesRes.x, yesRes.y);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+                    confirmed = true;
+                    break;
+                }
+                else {
+                    AddLog(instanceId, "Tasto SÌ non ancora rilevato, riprovo (" + std::to_string(attempt + 1) + "/4)...");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(600));
+                }
+            }
+
+            if (!confirmed) {
+                AddLog(instanceId, "⚠️ Tasto SÌ non trovato visivamente dopo 4 tentativi, salto.", ImVec4(1, 0.5f, 0, 1));
+            }
+        }
+        else {
+            AddLog(instanceId, "RICHIESTA ERRATA! Insisto sul tasto NO finché non lo preme... ❌", ImVec4(1, 0.3f, 0.3f, 1));
+
+            g_FarmStates[instanceId].visitatori = "❌ Rifiutato (" + foundVisitorFile + ")";
+            UpdateMasterDashboard(instanceId);
+
+            bool refused = false;
+            for (int attempt = 0; attempt < 4; attempt++) {
+                cv::Mat refuseScreen = CaptureInstanceScreen(instanceId, kAdbPath, g_Bots[instanceId].adbSerial);
+                MatchResult noRes = FindImage(refuseScreen, "no_sorry.png", 0.55f, true, 1.0f, false);
+
+                if (noRes.found) {
+                    AddLog(instanceId, "Trovato tasto NO, lo premo!");
+                    AdbTap(instanceId, noRes.x, noRes.y);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+                    refused = true;
+                    break;
+                }
+                else {
+                    AddLog(instanceId, "Tasto NO non ancora rilevato, riprovo (" + std::to_string(attempt + 1) + "/4)...");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(600));
+                }
+            }
+
+            if (!refused) {
+                AddLog(instanceId, "⚠️ Tasto NO non trovato visivamente dopo 4 tentativi, salto.", ImVec4(1, 0.5f, 0, 1));
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+    else {
+        g_FarmStates[instanceId].visitatori = "💤 Nessun visitatore attivo";
+        UpdateMasterDashboard(instanceId);
+    }
+}
+
+// ==========================================
+// CONTROLLO E RIPRISTINO HAY DAY / MEMU
+// ==========================================
+bool CheckAndRestoreGame(int instanceId) {
+    ScopedTimer timer(instanceId, "CheckAndRestoreGame");
+    BotInstance& bot = g_Bots[instanceId];
+    if (!bot.isRunning) return false;
+
+    cv::Mat screen = CaptureInstanceScreen(instanceId, kAdbPath, bot.adbSerial);
+    if (screen.empty()) return false;
+
+    // Cerca l'indicatore (le monete in alto a destra)
+    MatchResult indicatorRes = FindImage(screen, "hayday_indicator.png", 0.60f, true, 1.0f, false);
+
+    // Se non trova le monete, significa che il gioco è chiuso o in crash
+    if (!indicatorRes.found) {
+        AddLog(instanceId, "⚠️ ATTENZIONE: Hay Day non rilevato! Riavvio in corso...");
+        g_FarmStates[instanceId].caseificio = "🔄 Riavvio gioco in corso...";
+        UpdateMasterDashboard(instanceId);
+
+        // Comando ADB sicuro per forzare l'apertura pulita di Hay Day dalla Home di MEmu
+        std::string restartCmd = "shell monkey -p com.supercell.hayday -c android.intent.category.LAUNCHER 1";
+        RunAdbCommand(instanceId, restartCmd);
+
+        // Attesa attiva: controlla ogni secondo se il gioco ha finito di caricarsi
+        bool gameLoaded = false;
+        for (int i = 0; i < 30; i++) {
+            if (!bot.isRunning) return false;
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+            cv::Mat retryScreen = CaptureInstanceScreen(instanceId, kAdbPath, bot.adbSerial);
+            if (retryScreen.empty()) continue;
+
+            MatchResult retryIndicator = FindImage(retryScreen, "hayday_indicator.png", 0.60f, true, 1.0f, false);
+            if (retryIndicator.found) {
+                gameLoaded = true;
+                break; // Appena spuntano le monete, interrompe l'attesa ed esce dal ciclo
+            }
+        }
+
+        if (gameLoaded) {
+            AddLog(instanceId, "✅ Gioco riavviato con successo!");
+            std::this_thread::sleep_for(std::chrono::milliseconds(3000)); // Breve pausa di stabilizzazione
+            return true;
+        }
+        else {
+            AddLog(instanceId, "❌ Errore critico: impossibile riavviare Hay Day automaticamente.");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// ==========================================
+// FUNZIONE DI SUPPORTO: Chiusura menu fabbrica
+// ==========================================
+void SafeCloseMenu(int instanceId, const std::string& kAdbPath, const std::string& adbSerial) {
+    AdbTap(instanceId, 320, 30);
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+}
+
+// ==========================================
+// CONTROLLO RIENTRO FATTORIA (ICONA CASA)
+// ==========================================
+void CheckAndReturnHome(int instanceId) {
+    ScopedTimer timer(instanceId, "CheckAndReturnHome");
+    BotInstance& bot = g_Bots[instanceId];
+    if (!bot.isRunning) return;
+
+    // Controllo approfondito ripetuto 3 volte per sicurezza
+    for (int attempt = 0; attempt < 3; attempt++) {
+        if (!bot.isRunning) return;
+
+        cv::Mat screen = CaptureInstanceScreen(instanceId, kAdbPath, bot.adbSerial);
+        if (screen.empty()) continue;
+
+        // Cerca l'icona della casa (soglia alzata a 0.60f)
+        MatchResult homeRes = FindImage(screen, "casa.png", 0.60f, true, 1.0f, false);
+
+        if (homeRes.found) {
+            AddLog(instanceId, "⚠️ Rilevata icona 'casa.png': siamo nella fattoria di un altro giocatore! Torno alla nostra...", ImVec4(1, 0.5f, 0, 1));
+            g_FarmStates[instanceId].caseificio = "🏠 Rientro in fattoria...";
+            UpdateMasterDashboard(instanceId);
+
+            // Clicca sull'icona della casa per tornare indietro
+            AdbTap(instanceId, homeRes.x, homeRes.y);
+
+            // Pausa per dare il tempo al gioco di ricaricare la tua fattoria
+            std::this_thread::sleep_for(std::chrono::milliseconds(4000));
+            return;
+        }
+
+        // Breve pausa tra un controllo e l'altro del ciclo approfondito
+        std::this_thread::sleep_for(std::chrono::milliseconds(400));
+    }
+}
 // ============================================================
 
-// SUPER HUB FABBRICHE
+// SUPER HUB FABBRICHE - VERSIONE PULITA
 
 // ============================================================
 
-// VERSIONE:
+//
+
+// IMPORTANTE:
+
+// - NON MODIFICARE FindImage()
 
 // - vuoto.png = SLOT LIBERO
 
-// - se non c'è vuoto.png = FABBRICA PIENA
+// - se non trova vuoto.png = FABBRICA PIENA
 
-// - massimo 1 prodotto per slot
+// - le RICETTE vengono cercate con MULTI-SCALE
 
-// - ricontrollo dopo ogni trascinamento
+// - dopo ogni trascinamento viene rifatta la ricerca
 
-// - NESSUN system() per ADB
-
-// - finestra System32 nascosta
-
-// - log dettagliati
+// - apertura fabbrica con TAP ogni 300 ms
 
 // - massimo 12 tentativi apertura
 
-// - NON MODIFICARE FindImage()
+// - massimo 10 produzioni per sicurezza
+
+// - nessun system() per lo swipe
+
+// - niente finestre nere System32
+
+// - gruppi 1 / 2 / 3 separati
+
+// ============================================================
+
+
+
+
+
+// ============================================================
+
+// STATO SUPER HUB
 
 // ============================================================
 
@@ -30,19 +297,37 @@
 
 static int g_FactoryCycle[10] = { 0 };
 
+
+
 static std::string g_SuperHubState[10];
 
 
 
+
+
 // ============================================================
 
-// GRUPPI
+// GRUPPI FABBRICHE
+
+// ============================================================
+
+//
+
+// GRUPPO 1 -> cicli 1,4,7,10...
+
+// GRUPPO 2 -> cicli 2,5,8,11...
+
+// GRUPPO 3 -> cicli 3,6,9,12...
 
 // ============================================================
 
 
 
-bool IsFactoryGroupActive(int cycle, int group)
+bool IsFactoryGroupActive(
+
+    int cycle,
+
+    int group)
 
 {
 
@@ -52,13 +337,17 @@ bool IsFactoryGroupActive(int cycle, int group)
 
 
 
-    int currentGroup = ((cycle - 1) % 3) + 1;
+    int currentGroup =
+
+        ((cycle - 1) % 3) + 1;
 
 
 
     return currentGroup == group;
 
 }
+
+
 
 
 
@@ -81,6 +370,8 @@ struct SuperHubRecipe
     int amount;
 
 };
+
+
 
 
 
@@ -120,6 +411,8 @@ SuperHubRecipe MakeRecipe(
 
 
 
+
+
 // ============================================================
 
 // CONTROLLO PNG
@@ -150,9 +443,11 @@ bool SuperHubImageExists(
 
 
 
+
+
 // ============================================================
 
-// ADB SWIPE SENZA FINESTRA SYSTEM32
+// ADB SWIPE SENZA FINESTRA
 
 // ============================================================
 
@@ -184,21 +479,13 @@ bool AdbSwipeHidden(
 
         " shell input swipe " +
 
-        std::to_string(x1) +
+        std::to_string(x1) + " " +
 
-        " " +
+        std::to_string(y1) + " " +
 
-        std::to_string(y1) +
+        std::to_string(x2) + " " +
 
-        " " +
-
-        std::to_string(x2) +
-
-        " " +
-
-        std::to_string(y2) +
-
-        " " +
+        std::to_string(y2) + " " +
 
         std::to_string(durationMs);
 
@@ -226,7 +513,9 @@ bool AdbSwipeHidden(
 
 
 
-    si.cb = sizeof(si);
+    si.cb =
+
+        sizeof(si);
 
 
 
@@ -324,25 +613,31 @@ bool AdbSwipeHidden(
 
 
 
-// ============================================================
 
-// RICERCA FABBRICA MULTI-SCALE
-
-// SOLO PER LE FABBRICHE
-
-// NON MODIFICA FindImage()
 
 // ============================================================
 
+// RICERCA GENERICA MULTI-SCALE
+
+// USATA SOLO DAL SUPER HUB
+
+//
+
+// NON TOCCA FindImage()
+
+// ============================================================
 
 
-bool FindFactoryMultiScale(
+
+bool FindSuperHubMultiScale(
 
     const cv::Mat& screen,
 
-    const std::string& factoryTemplate,
+    const std::string& templatePath,
 
-    MatchResult& bestResult)
+    MatchResult& bestResult,
+
+    float minimumThreshold = 0.55f)
 
 {
 
@@ -372,7 +667,7 @@ bool FindFactoryMultiScale(
 
         cv::imread(
 
-            factoryTemplate,
+            templatePath,
 
             cv::IMREAD_COLOR);
 
@@ -387,6 +682,10 @@ bool FindFactoryMultiScale(
     const float scales[] =
 
     {
+
+    1.10f,
+
+    1.05f,
 
     1.00f,
 
@@ -408,9 +707,57 @@ bool FindFactoryMultiScale(
 
     0.55f,
 
-    0.50f
+    0.50f,
+
+    0.45f,
+
+    0.40f
 
     };
+
+
+
+    cv::Mat grayScreen;
+
+
+
+    try
+
+    {
+
+        if (screen.channels() == 3)
+
+        {
+
+            cv::cvtColor(
+
+                screen,
+
+                grayScreen,
+
+                cv::COLOR_BGR2GRAY);
+
+        }
+
+        else
+
+        {
+
+            grayScreen =
+
+                screen;
+
+        }
+
+    }
+
+    catch (...)
+
+    {
+
+        return false;
+
+    }
 
 
 
@@ -442,11 +789,15 @@ bool FindFactoryMultiScale(
 
 
 
-        if (newWidth < 10 ||
+        if (newWidth < 8 ||
 
-            newHeight < 10)
+            newHeight < 8)
+
+        {
 
             continue;
+
+        }
 
 
 
@@ -454,7 +805,11 @@ bool FindFactoryMultiScale(
 
             newHeight > screen.rows)
 
+        {
+
             continue;
+
+        }
 
 
 
@@ -496,8 +851,6 @@ bool FindFactoryMultiScale(
 
 
 
-        cv::Mat grayScreen;
-
         cv::Mat grayTemplate;
 
 
@@ -505,16 +858,6 @@ bool FindFactoryMultiScale(
         try
 
         {
-
-            cv::cvtColor(
-
-                screen,
-
-                grayScreen,
-
-                cv::COLOR_BGR2GRAY);
-
-
 
             cv::cvtColor(
 
@@ -533,6 +876,12 @@ bool FindFactoryMultiScale(
             continue;
 
         }
+
+
+
+        if (grayTemplate.empty())
+
+            continue;
 
 
 
@@ -602,7 +951,9 @@ bool FindFactoryMultiScale(
 
         {
 
-            bestScore = maxVal;
+            bestScore =
+
+                maxVal;
 
 
 
@@ -628,15 +979,19 @@ bool FindFactoryMultiScale(
 
                 (newHeight / 2);
 
-
-
-            bestResult.found =
-
-                (maxVal >= 0.60);
-
         }
 
     }
+
+
+
+    bestResult.found =
+
+        bestScore >=
+
+        static_cast<double>(
+
+            minimumThreshold);
 
 
 
@@ -646,9 +1001,55 @@ bool FindFactoryMultiScale(
 
 
 
+
+
+// ============================================================
+
+// RICERCA FABBRICA MULTI-SCALE
+
+// ============================================================
+
+
+
+bool FindFactoryMultiScale(
+
+    const cv::Mat& screen,
+
+    const std::string& factoryTemplate,
+
+    MatchResult& bestResult)
+
+{
+
+    return FindSuperHubMultiScale(
+
+        screen,
+
+        factoryTemplate,
+
+        bestResult,
+
+        0.60f);
+
+}
+
+
+
+
+
 // ============================================================
 
 // CERCA RICETTA NEL MENU
+
+//
+
+// QUI È LA CORREZIONE PRINCIPALE.
+
+//
+
+// Prima veniva usata FindImage().
+
+// Ora la ricetta viene cercata MULTI-SCALE.
 
 // ============================================================
 
@@ -686,83 +1087,101 @@ bool FindRecipeInFactoryMenu(
 
 
 
-    // ----------------------------------------
-
-    // PRODOTTO IN PRODUZIONE
-
-    // ----------------------------------------
 
 
+    // --------------------------------------------------------
 
-    if (SuperHubImageExists(
+    // PROVA IMMAGINE IN PRODUZIONE
 
-        recipe.cookingImage))
+    // --------------------------------------------------------
+
+
+
+    if (!recipe.cookingImage.empty() &&
+
+        SuperHubImageExists(
+
+            recipe.cookingImage))
 
     {
 
-        result =
-
-            FindImage(
-
-                screen,
-
-                recipe.cookingImage,
-
-                0.58f,
-
-                true,
-
-                1.0f,
-
-                false);
+        MatchResult cookingRes;
 
 
 
-        if (result.found)
+        if (FindSuperHubMultiScale(
+
+            screen,
+
+            recipe.cookingImage,
+
+            cookingRes,
+
+            0.55f))
+
+        {
+
+            result =
+
+                cookingRes;
+
+
 
             return true;
+
+        }
 
     }
 
 
 
-    // ----------------------------------------
-
-    // PRODOTTO FINITO
-
-    // ----------------------------------------
 
 
+    // --------------------------------------------------------
 
-    if (SuperHubImageExists(
+    // PROVA IMMAGINE FINITA
 
-        recipe.finishedImage))
+    // --------------------------------------------------------
+
+
+
+    if (!recipe.finishedImage.empty() &&
+
+        SuperHubImageExists(
+
+            recipe.finishedImage))
 
     {
 
-        result =
-
-            FindImage(
-
-                screen,
-
-                recipe.finishedImage,
-
-                0.58f,
-
-                true,
-
-                1.0f,
-
-                false);
+        MatchResult finishedRes;
 
 
 
-        if (result.found)
+        if (FindSuperHubMultiScale(
+
+            screen,
+
+            recipe.finishedImage,
+
+            finishedRes,
+
+            0.55f))
+
+        {
+
+            result =
+
+                finishedRes;
+
+
 
             return true;
 
+        }
+
     }
+
+
 
 
 
@@ -772,9 +1191,11 @@ bool FindRecipeInFactoryMenu(
 
 
 
+
+
 // ============================================================
 
-// CERCA UNA RICETTA DISPONIBILE
+// CERCA QUALSIASI RICETTA DISPONIBILE
 
 // ============================================================
 
@@ -792,9 +1213,39 @@ bool FindAnyAvailableRecipe(
 
 {
 
+    selectedMatch =
+
+    {
+
+    false,
+
+    -1,
+
+    -1,
+
+    0.0f
+
+    };
+
+
+
     if (screen.empty())
 
         return false;
+
+
+
+
+
+    double bestScore = 0.0;
+
+
+
+    bool found =
+
+        false;
+
+
 
 
 
@@ -822,7 +1273,7 @@ bool FindAnyAvailableRecipe(
 
 
 
-        if (FindRecipeInFactoryMenu(
+        if (!FindRecipeInFactoryMenu(
 
             screen,
 
@@ -831,6 +1282,42 @@ bool FindAnyAvailableRecipe(
             res))
 
         {
+
+            continue;
+
+        }
+
+
+
+
+
+        // ----------------------------------------------------
+
+        // PRENDIAMO LA MIGLIORE RICETTA TROVATA
+
+        // ----------------------------------------------------
+
+
+
+        if (!found ||
+
+            res.score >
+
+            bestScore)
+
+        {
+
+            found =
+
+                true;
+
+
+
+            bestScore =
+
+                res.score;
+
+
 
             selectedRecipe =
 
@@ -842,25 +1329,35 @@ bool FindAnyAvailableRecipe(
 
                 res;
 
-
-
-            return true;
-
         }
 
     }
 
 
 
-    return false;
+
+
+    return found;
 
 }
 
 
 
+
+
 // ============================================================
 
-// CONTROLLA MENU FABBRICA
+// CONTROLLO MENU FABBRICA
+
+//
+
+// NON USIAMO LA PRESENZA DELLA RICETTA PER DIRE
+
+// CHE IL MENU È APERTO.
+
+//
+
+// Basta trovare uno dei marker del menu.
 
 // ============================================================
 
@@ -880,11 +1377,13 @@ bool IsSuperHubFactoryMenuOpen(
 
 
 
-    // ----------------------------------------
+
+
+    // --------------------------------------------------------
 
     // CROSS
 
-    // ----------------------------------------
+    // --------------------------------------------------------
 
 
 
@@ -912,6 +1411,8 @@ bool IsSuperHubFactoryMenuOpen(
 
 
 
+
+
     cross =
 
         FindImage(
@@ -933,6 +1434,8 @@ bool IsSuperHubFactoryMenuOpen(
     if (cross.found)
 
         return true;
+
+
 
 
 
@@ -960,11 +1463,13 @@ bool IsSuperHubFactoryMenuOpen(
 
 
 
-    // ----------------------------------------
+
+
+    // --------------------------------------------------------
 
     // VUOTO
 
-    // ----------------------------------------
+    // --------------------------------------------------------
 
 
 
@@ -992,11 +1497,13 @@ bool IsSuperHubFactoryMenuOpen(
 
 
 
-    // ----------------------------------------
+
+
+    // --------------------------------------------------------
 
     // FULMINE
 
-    // ----------------------------------------
+    // --------------------------------------------------------
 
 
 
@@ -1024,21 +1531,33 @@ bool IsSuperHubFactoryMenuOpen(
 
 
 
+
+
     return false;
 
 }
 
 
 
-// ============================================================
 
-// CERCA SLOT VUOTO
 
 // ============================================================
 
-// IMPORTANTISSIMO:
+// CERCA VUOTO
 
-// vuoto.png = C'È UNO SLOT DISPONIBILE
+//
+
+// IMPORTANTE:
+
+//
+
+// vuoto.png = UNO SLOT LIBERO
+
+//
+
+// La funzione viene richiamata nuovamente dopo OGNI
+
+// trascinamento.
 
 // ============================================================
 
@@ -1074,6 +1593,8 @@ bool FindEmptyProductionSlot(
 
 
 
+
+
     emptySlot =
 
         FindImage(
@@ -1092,15 +1613,29 @@ bool FindEmptyProductionSlot(
 
 
 
+
+
     return emptySlot.found;
 
 }
 
 
 
+
+
 // ============================================================
 
-// TROVA RICETTA
+// PRODUZIONE COMPATIBILITÀ
+
+//
+
+// Manteniamo questa funzione perché il BotEngine potrebbe
+
+// chiamarla direttamente.
+
+//
+
+// La logica reale usa sempre vuoto.png.
 
 // ============================================================
 
@@ -1128,803 +1663,77 @@ bool RunFactoryProduction(
 
 {
 
-    if (instanceId < 0 ||
+    SuperHubRecipe recipe =
 
-        instanceId >= 10)
+        MakeRecipe(
 
-        return false;
+            finishedProductTemplate,
+
+            cookingProductTemplate,
+
+            productionCount);
 
 
 
-    AddLog(
+    std::vector<SuperHubRecipe> recipes;
+
+
+
+    recipes.push_back(
+
+        recipe);
+
+
+
+
+
+    // --------------------------------------------------------
+
+    // USA LA STESSA LOGICA DEL SUPER HUB
+
+    // --------------------------------------------------------
+
+
+
+    return RunSuperHubFactory(
 
         instanceId,
-
-        "SUPER HUB: " +
-
-        factoryName +
-
-        " -> INIZIO");
-
-
-
-    if (!CheckAndRestoreGame(
-
-        instanceId))
-
-    {
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": ripristino FALLITO");
-
-
-
-        return false;
-
-    }
-
-
-
-    CheckAndReturnHome(
-
-        instanceId);
-
-
-
-    BotInstance& bot =
-
-        g_Bots[instanceId];
-
-
-
-    cv::Mat screen =
-
-        CaptureInstanceScreen(
-
-            instanceId,
-
-            kAdbPath,
-
-            bot.adbSerial);
-
-
-
-    if (screen.empty())
-
-        return false;
-
-
-
-    MatchResult factoryRes;
-
-
-
-    if (!FindFactoryMultiScale(
-
-        screen,
 
         factoryTemplate,
 
-        factoryRes))
+        recipes,
 
-    {
+        factoryName,
 
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": fabbrica NON TROVATA");
-
-
-
-        return false;
-
-    }
-
-
-
-    int factoryX =
-
-        factoryRes.x;
-
-
-
-    int factoryY =
-
-        factoryRes.y;
-
-
-
-    AddLog(
-
-        instanceId,
-
-        factoryName +
-
-        ": fabbrica trovata X=" +
-
-        std::to_string(factoryX) +
-
-        " Y=" +
-
-        std::to_string(factoryY));
-
-
-
-    // ========================================================
-
-    // APERTURA
-
-    // ========================================================
-
-
-
-    bool menuOpened = false;
-
-
-
-    for (int attempt = 1;
-
-        attempt <= 12;
-
-        attempt++)
-
-    {
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": apertura " +
-
-            std::to_string(attempt) +
-
-            "/12");
-
-
-
-        AdbTap(
-
-            instanceId,
-
-            factoryX,
-
-            factoryY);
-
-
-
-        std::this_thread::sleep_for(
-
-            std::chrono::milliseconds(300));
-
-
-
-        cv::Mat openedScreen =
-
-            CaptureInstanceScreen(
-
-                instanceId,
-
-                kAdbPath,
-
-                bot.adbSerial);
-
-
-
-        if (openedScreen.empty())
-
-            continue;
-
-
-
-        if (IsSuperHubFactoryMenuOpen(
-
-            instanceId,
-
-            openedScreen))
-
-        {
-
-            menuOpened = true;
-
-            screen = openedScreen;
-
-
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": MENU APERTO");
-
-
-
-            break;
-
-        }
-
-    }
-
-
-
-    if (!menuOpened)
-
-    {
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": MENU NON APERTO");
-
-
-
-        SafeCloseMenu(
-
-            instanceId,
-
-            kAdbPath,
-
-            bot.adbSerial);
-
-
-
-        return false;
-
-    }
-
-
-
-    std::this_thread::sleep_for(
-
-        std::chrono::milliseconds(600));
-
-
-
-    // ========================================================
-
-    // CERCA SLOT VUOTO
-
-    // ========================================================
-
-
-
-    MatchResult emptySlot;
-
-
-
-    if (!FindEmptyProductionSlot(
-
-        screen,
-
-        emptySlot))
-
-    {
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": NESSUN SLOT VUOTO -> FABBRICA PIENA");
-
-
-
-        SafeCloseMenu(
-
-            instanceId,
-
-            kAdbPath,
-
-            bot.adbSerial);
-
-
-
-        return false;
-
-    }
-
-
-
-    int produced = 0;
-
-
-
-    // ========================================================
-
-    // MASSIMO PRODUZIONE
-
-    // ========================================================
-
-    // Il vero stop è vuoto.png.
-
-    // productionCount rimane comunque una protezione.
-
-    // ========================================================
-
-
-
-    int safetyLimit =
-
-        std::min(
-
-            productionCount,
-
-            10);
-
-
-
-    for (int slot = 0;
-
-        slot < safetyLimit;
-
-        slot++)
-
-    {
-
-        cv::Mat currentScreen =
-
-            CaptureInstanceScreen(
-
-                instanceId,
-
-                kAdbPath,
-
-                bot.adbSerial);
-
-
-
-        if (currentScreen.empty())
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": screen vuota -> STOP");
-
-
-
-            break;
-
-        }
-
-
-
-        // ----------------------------------------------------
-
-        // CERCA SLOT VUOTO
-
-        // ----------------------------------------------------
-
-
-
-        MatchResult currentEmptySlot;
-
-
-
-        if (!FindEmptyProductionSlot(
-
-            currentScreen,
-
-            currentEmptySlot))
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": NESSUN VUOTO -> FABBRICA PIENA");
-
-
-
-            break;
-
-        }
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": SLOT VUOTO TROVATO X=" +
-
-            std::to_string(
-
-                currentEmptySlot.x) +
-
-            " Y=" +
-
-            std::to_string(
-
-                currentEmptySlot.y));
-
-
-
-        // ----------------------------------------------------
-
-        // CERCA PRODOTTO
-
-        // ----------------------------------------------------
-
-
-
-        MatchResult productRes =
-
-            FindImage(
-
-                currentScreen,
-
-                cookingProductTemplate,
-
-                0.58f,
-
-                true,
-
-                1.0f,
-
-                false);
-
-
-
-        if (!productRes.found)
-
-        {
-
-            productRes =
-
-                FindImage(
-
-                    currentScreen,
-
-                    finishedProductTemplate,
-
-                    0.58f,
-
-                    true,
-
-                    1.0f,
-
-                    false);
-
-        }
-
-
-
-        if (!productRes.found)
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": RICETTA NON TROVATA -> STOP");
-
-
-
-            break;
-
-        }
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": prodotto trovato X=" +
-
-            std::to_string(
-
-                productRes.x) +
-
-            " Y=" +
-
-            std::to_string(
-
-                productRes.y));
-
-
-
-        // ----------------------------------------------------
-
-        // TRASCINAMENTO NELLO SLOT VUOTO
-
-        // ----------------------------------------------------
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": TRASCINO PRODOTTO " +
-
-            std::to_string(slot + 1) +
-
-            "/" +
-
-            std::to_string(safetyLimit));
-
-
-
-        bool swipeOk =
-
-            AdbSwipeHidden(
-
-                kAdbPath,
-
-                bot.adbSerial,
-
-                productRes.x,
-
-                productRes.y,
-
-                currentEmptySlot.x,
-
-                currentEmptySlot.y,
-
-                450);
-
-
-
-        if (!swipeOk)
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": ERRORE ADB SWIPE -> STOP");
-
-
-
-            break;
-
-        }
-
-
-
-        produced++;
-
-
-
-        std::this_thread::sleep_for(
-
-            std::chrono::milliseconds(600));
-
-
-
-        // ----------------------------------------------------
-
-        // CONTROLLO POST-TRASCINAMENTO
-
-        // ----------------------------------------------------
-
-
-
-        cv::Mat afterSwipe =
-
-            CaptureInstanceScreen(
-
-                instanceId,
-
-                kAdbPath,
-
-                bot.adbSerial);
-
-
-
-        if (afterSwipe.empty())
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": screen post-swipe vuota");
-
-
-
-            break;
-
-        }
-
-
-
-        MatchResult nextEmpty;
-
-
-
-        if (!FindEmptyProductionSlot(
-
-            afterSwipe,
-
-            nextEmpty))
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": SLOT PIENI -> STOP");
-
-
-
-            break;
-
-        }
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": C'È ANCORA UNO SLOT VUOTO");
-
-
-
-        // ----------------------------------------------------
-
-        // CONTINUA SOLO SE VUOTO ESISTE
-
-        // ----------------------------------------------------
-
-
-
-        screen = afterSwipe;
-
-    }
-
-
-
-    // ========================================================
-
-    // CHIUSURA
-
-    // ========================================================
-
-
-
-    AddLog(
-
-        instanceId,
-
-        factoryName +
-
-        ": CHIUSURA MENU");
-
-
-
-    SafeCloseMenu(
-
-        instanceId,
-
-        kAdbPath,
-
-        bot.adbSerial);
-
-
-
-    // ========================================================
-
-    // RISULTATO
-
-    // ========================================================
-
-
-
-    if (produced > 0)
-
-    {
-
-        farmState =
-
-            factoryName +
-
-            ": prodotti " +
-
-            std::to_string(
-
-                produced);
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": FINE - prodotti=" +
-
-            std::to_string(
-
-                produced));
-
-
-
-        UpdateMasterDashboard(
-
-            instanceId);
-
-
-
-        return true;
-
-    }
-
-
-
-    farmState =
-
-        factoryName +
-
-        ": nessuna produzione";
-
-
-
-    AddLog(
-
-        instanceId,
-
-        factoryName +
-
-        ": FINE - NESSUNA PRODUZIONE");
-
-
-
-    UpdateMasterDashboard(
-
-        instanceId);
-
-
-
-    return false;
+        farmState);
 
 }
+
+
+
+
+
+// ============================================================
+
+// DICHIARAZIONE ANTICIPATA
+
+// ============================================================
+
+
+
+bool RunSuperHubFactory(
+
+    int instanceId,
+
+    const std::string& factoryTemplate,
+
+    const std::vector<SuperHubRecipe>& recipes,
+
+    const std::string& factoryName,
+
+    std::string& farmState);
+
+
 
 
 
@@ -1950,27 +1759,31 @@ bool RunSuperHubRecipe(
 
 {
 
-    return RunFactoryProduction(
+    std::vector<SuperHubRecipe> recipes;
+
+
+
+    recipes.push_back(
+
+        recipe);
+
+
+
+    return RunSuperHubFactory(
 
         instanceId,
 
         factoryTemplate,
 
-        recipe.finishedImage,
-
-        recipe.cookingImage,
-
-        "",
-
-        recipe.amount,
+        recipes,
 
         factoryName,
-
-        factoryName + ": produzione",
 
         farmState);
 
 }
+
+
 
 
 
@@ -2000,7 +1813,13 @@ bool RunSuperHubFactory(
 
         instanceId >= 10)
 
+    {
+
         return false;
+
+    }
+
+
 
 
 
@@ -2009,6 +1828,8 @@ bool RunSuperHubFactory(
         instanceId,
 
         "================================================");
+
+
 
 
 
@@ -2024,9 +1845,11 @@ bool RunSuperHubFactory(
 
 
 
+
+
     // ========================================================
 
-    // CONTROLLO FABBRICA
+    // CONTROLLO PNG FABBRICA
 
     // ========================================================
 
@@ -2048,9 +1871,25 @@ bool RunSuperHubFactory(
 
 
 
+        farmState =
+
+            factoryName +
+
+            ": PNG mancante";
+
+
+
+        UpdateMasterDashboard(
+
+            instanceId);
+
+
+
         return false;
 
     }
+
+
 
 
 
@@ -2078,9 +1917,33 @@ bool RunSuperHubFactory(
 
 
 
+        farmState =
+
+            factoryName +
+
+            ": gioco non disponibile";
+
+
+
+        UpdateMasterDashboard(
+
+            instanceId);
+
+
+
         return false;
 
     }
+
+
+
+
+
+    // ========================================================
+
+    // TORNA A CASA
+
+    // ========================================================
 
 
 
@@ -2090,15 +1953,19 @@ bool RunSuperHubFactory(
 
 
 
+
+
     BotInstance& bot =
 
         g_Bots[instanceId];
 
 
 
+
+
     // ========================================================
 
-    // SCREEN
+    // SCREEN CASA
 
     // ========================================================
 
@@ -2113,6 +1980,8 @@ bool RunSuperHubFactory(
             kAdbPath,
 
             bot.adbSerial);
+
+
 
 
 
@@ -2136,6 +2005,8 @@ bool RunSuperHubFactory(
 
 
 
+
+
     // ========================================================
 
     // TROVA FABBRICA
@@ -2145,6 +2016,8 @@ bool RunSuperHubFactory(
 
 
     MatchResult factoryRes;
+
+
 
 
 
@@ -2188,6 +2061,8 @@ bool RunSuperHubFactory(
 
 
 
+
+
     int factoryX =
 
         factoryRes.x;
@@ -2200,31 +2075,47 @@ bool RunSuperHubFactory(
 
 
 
+
+
     AddLog(
 
         instanceId,
 
         factoryName +
 
-        ": trovata X=" +
+        ": FABBRICA TROVATA X=" +
 
         std::to_string(factoryX) +
 
         " Y=" +
 
-        std::to_string(factoryY));
+        std::to_string(factoryY) +
+
+        " SCORE=" +
+
+        std::to_string(factoryRes.score));
+
+
 
 
 
     // ========================================================
 
-    // APERTURA MENU
+    // APERTURA FABBRICA
+
+    //
+
+    // TAP OGNI 300ms
 
     // ========================================================
 
 
 
-    bool menuOpened = false;
+    bool menuOpened =
+
+        false;
+
+
 
 
 
@@ -2250,6 +2141,8 @@ bool RunSuperHubFactory(
 
 
 
+
+
         AdbTap(
 
             instanceId,
@@ -2260,9 +2153,13 @@ bool RunSuperHubFactory(
 
 
 
+
+
         std::this_thread::sleep_for(
 
             std::chrono::milliseconds(300));
+
+
 
 
 
@@ -2278,9 +2175,13 @@ bool RunSuperHubFactory(
 
 
 
+
+
         if (newScreen.empty())
 
             continue;
+
+
 
 
 
@@ -2292,13 +2193,17 @@ bool RunSuperHubFactory(
 
         {
 
-            menuOpened = true;
+            menuOpened =
+
+                true;
 
 
 
             screen =
 
                 newScreen;
+
+
 
 
 
@@ -2312,11 +2217,15 @@ bool RunSuperHubFactory(
 
 
 
+
+
             break;
 
         }
 
     }
+
+
 
 
 
@@ -2342,11 +2251,15 @@ bool RunSuperHubFactory(
 
 
 
+
+
         farmState =
 
             factoryName +
 
             ": menu non aperto";
+
+
 
 
 
@@ -2356,15 +2269,19 @@ bool RunSuperHubFactory(
 
 
 
+
+
         return false;
 
     }
 
 
 
+
+
     // ========================================================
 
-    // ATTESA MENU
+    // ASPETTA CHE IL MENU SI STABILIZZI
 
     // ========================================================
 
@@ -2372,35 +2289,33 @@ bool RunSuperHubFactory(
 
     std::this_thread::sleep_for(
 
-        std::chrono::milliseconds(600));
+        std::chrono::milliseconds(500));
+
+
 
 
 
     // ========================================================
 
-    // CICLO SLOT
+    // PRODUZIONE
 
     // ========================================================
 
 
 
-    int totalProduced = 0;
+    int totalProduced =
+
+        0;
 
 
 
-    // --------------------------------------------------------
-
-    // SICUREZZA ASSOLUTA
-
-    // Una fabbrica non può fare più di 10 trascinamenti
-
-    // in una singola apertura.
-
-    // --------------------------------------------------------
 
 
+    const int MAX_SLOTS_SICUREZZA =
 
-    const int MAX_SLOTS_SICUREZZA = 10;
+        10;
+
+
 
 
 
@@ -2418,17 +2333,31 @@ bool RunSuperHubFactory(
 
             factoryName +
 
-            ": controllo SLOT " +
+            ": ------------------------------");
+
+
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": CONTROLLO SLOT " +
 
             std::to_string(slotNumber));
 
 
 
-        // ----------------------------------------------------
 
-        // NUOVA SCREEN
 
-        // ----------------------------------------------------
+        // ====================================================
+
+        // NUOVO SCREEN
+
+        // ====================================================
 
 
 
@@ -2441,6 +2370,8 @@ bool RunSuperHubFactory(
                 kAdbPath,
 
                 bot.adbSerial);
+
+
 
 
 
@@ -2464,15 +2395,19 @@ bool RunSuperHubFactory(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // CERCA VUOTO
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
         MatchResult emptySlot;
+
+
 
 
 
@@ -2490,7 +2425,21 @@ bool RunSuperHubFactory(
 
                 factoryName +
 
-                ": NESSUN 'VUOTO' -> FABBRICA PIENA");
+                ": >>> VUOTO NON TROVATO <<<");
+
+
+
+
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": FABBRICA PIENA -> STOP");
+
+
 
 
 
@@ -2500,13 +2449,27 @@ bool RunSuperHubFactory(
 
 
 
+
+
         AddLog(
 
             instanceId,
 
             factoryName +
 
-            ": VUOTO TROVATO X=" +
+            ": VUOTO TROVATO");
+
+
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": SLOT X=" +
 
             std::to_string(
 
@@ -2520,11 +2483,33 @@ bool RunSuperHubFactory(
 
 
 
-        // ----------------------------------------------------
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": VUOTO SCORE=" +
+
+            std::to_string(
+
+                emptySlot.score));
+
+
+
+
+
+        // ====================================================
 
         // CERCA RICETTA
 
-        // ----------------------------------------------------
+        //
+
+        // MULTI-SCALE
+
+        // ====================================================
 
 
 
@@ -2533,6 +2518,20 @@ bool RunSuperHubFactory(
 
 
         MatchResult selectedMatch;
+
+
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": CERCO RICETTA MULTI-SCALE...");
+
+
 
 
 
@@ -2554,7 +2553,21 @@ bool RunSuperHubFactory(
 
                 factoryName +
 
-                ": VUOTO PRESENTE MA NESSUNA RICETTA DISPONIBILE");
+                ": >>> NESSUNA RICETTA TROVATA <<<");
+
+
+
+
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": VUOTO C'È MA RICETTA NON RICONOSCIUTA");
+
+
 
 
 
@@ -2564,14 +2577,6 @@ bool RunSuperHubFactory(
 
 
 
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": RICETTA TROVATA");
-
 
 
         AddLog(
@@ -2580,7 +2585,19 @@ bool RunSuperHubFactory(
 
             factoryName +
 
-            ": PRODOTTO X=" +
+            ": >>> RICETTA TROVATA <<<");
+
+
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": RICETTA X=" +
 
             std::to_string(
 
@@ -2594,11 +2611,123 @@ bool RunSuperHubFactory(
 
 
 
-        // ----------------------------------------------------
 
-        // TRASCINA NEL VUOTO
 
-        // ----------------------------------------------------
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": RICETTA SCORE=" +
+
+            std::to_string(
+
+                selectedMatch.score));
+
+
+
+
+
+        // ====================================================
+
+        // CONTROLLO COORDINATE
+
+        // ====================================================
+
+
+
+        if (selectedMatch.x < 0 ||
+
+            selectedMatch.y < 0 ||
+
+            emptySlot.x < 0 ||
+
+            emptySlot.y < 0)
+
+        {
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": COORDINATE NON VALIDE -> STOP");
+
+
+
+            break;
+
+        }
+
+
+
+
+
+        // ====================================================
+
+        // EVITA DI TRASCINARE SE RICETTA E SLOT SONO
+
+        // PRATICAMENTE NELLO STESSO PUNTO
+
+        // ====================================================
+
+
+
+        int dx =
+
+            selectedMatch.x -
+
+            emptySlot.x;
+
+
+
+        int dy =
+
+            selectedMatch.y -
+
+            emptySlot.y;
+
+
+
+        int distanceSquared =
+
+            (dx * dx) +
+
+            (dy * dy);
+
+
+
+
+
+        if (distanceSquared < 400)
+
+        {
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": RICETTA E SLOT TROPPO VICINI -> STOP");
+
+
+
+            break;
+
+        }
+
+
+
+
+
+        // ====================================================
+
+        // TRASCINAMENTO
+
+        // ====================================================
 
 
 
@@ -2608,11 +2737,45 @@ bool RunSuperHubFactory(
 
             factoryName +
 
-            ": TRASCINAMENTO SLOT " +
+            ": TRASCINO RICETTA -> VUOTO");
+
+
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": DA (" +
 
             std::to_string(
 
-                slotNumber));
+                selectedMatch.x) +
+
+            "," +
+
+            std::to_string(
+
+                selectedMatch.y) +
+
+            ") A (" +
+
+            std::to_string(
+
+                emptySlot.x) +
+
+            "," +
+
+            std::to_string(
+
+                emptySlot.y) +
+
+            ")");
+
+
 
 
 
@@ -2624,15 +2787,23 @@ bool RunSuperHubFactory(
 
                 bot.adbSerial,
 
+
+
                 selectedMatch.x,
 
                 selectedMatch.y,
+
+
 
                 emptySlot.x,
 
                 emptySlot.y,
 
+
+
                 450);
+
+
 
 
 
@@ -2656,29 +2827,47 @@ bool RunSuperHubFactory(
 
 
 
+
+
         totalProduced++;
 
 
 
-        // ----------------------------------------------------
 
-        // ATTESA DOPO TRASCINAMENTO
 
-        // ----------------------------------------------------
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": TRASCINAMENTO COMPLETATO");
+
+
+
+
+
+        // ====================================================
+
+        // ASPETTA AGGIORNAMENTO MENU
+
+        // ====================================================
 
 
 
         std::this_thread::sleep_for(
 
-            std::chrono::milliseconds(650));
+            std::chrono::milliseconds(700));
 
 
 
-        // ----------------------------------------------------
 
-        // RICONTROLLO REALE DEL MENU
 
-        // ----------------------------------------------------
+        // ====================================================
+
+        // NUOVO SCREEN
+
+        // ====================================================
 
 
 
@@ -2694,6 +2883,8 @@ bool RunSuperHubFactory(
 
 
 
+
+
         if (afterSwipe.empty())
 
         {
@@ -2704,7 +2895,7 @@ bool RunSuperHubFactory(
 
                 factoryName +
 
-                ": SCREEN POST-SWIPE VUOTA");
+                ": SCREEN POST-SWIPE VUOTA -> STOP");
 
 
 
@@ -2714,15 +2905,23 @@ bool RunSuperHubFactory(
 
 
 
-        // ----------------------------------------------------
 
-        // CERCA DI NUOVO VUOTO
 
-        // ----------------------------------------------------
+        // ====================================================
+
+        // CERCA NUOVAMENTE VUOTO
+
+        //
+
+        // QUESTO È IL CONTROLLO REALE DELLO SLOT.
+
+        // ====================================================
 
 
 
         MatchResult nextEmpty;
+
+
 
 
 
@@ -2740,7 +2939,21 @@ bool RunSuperHubFactory(
 
                 factoryName +
 
-                ": DOPO TRASCINAMENTO NESSUN VUOTO");
+                ": DOPO IL TRASCINAMENTO");
+
+
+
+
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": >>> VUOTO NON TROVATO <<<");
+
+
 
 
 
@@ -2754,9 +2967,13 @@ bool RunSuperHubFactory(
 
 
 
+
+
             break;
 
         }
+
+
 
 
 
@@ -2766,15 +2983,51 @@ bool RunSuperHubFactory(
 
             factoryName +
 
-            ": DOPO TRASCINAMENTO C'È ANCORA VUOTO");
+            ": DOPO IL TRASCINAMENTO");
 
 
 
-        // ----------------------------------------------------
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": >>> NUOVO VUOTO TROVATO <<<");
+
+
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": NUOVO VUOTO X=" +
+
+            std::to_string(
+
+                nextEmpty.x) +
+
+            " Y=" +
+
+            std::to_string(
+
+                nextEmpty.y));
+
+
+
+
+
+        // ====================================================
 
         // AGGIORNA SCREEN
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -2786,9 +3039,11 @@ bool RunSuperHubFactory(
 
 
 
+
+
     // ========================================================
 
-    // CHIUSURA
+    // CHIUSURA MENU
 
     // ========================================================
 
@@ -2804,6 +3059,8 @@ bool RunSuperHubFactory(
 
 
 
+
+
     SafeCloseMenu(
 
         instanceId,
@@ -2811,6 +3068,8 @@ bool RunSuperHubFactory(
         kAdbPath,
 
         bot.adbSerial);
+
+
 
 
 
@@ -2838,6 +3097,8 @@ bool RunSuperHubFactory(
 
 
 
+
+
         AddLog(
 
             instanceId,
@@ -2854,9 +3115,13 @@ bool RunSuperHubFactory(
 
 
 
+
+
         UpdateMasterDashboard(
 
             instanceId);
+
+
 
 
 
@@ -2866,11 +3131,15 @@ bool RunSuperHubFactory(
 
 
 
+
+
     farmState =
 
         factoryName +
 
         ": nessuna produzione";
+
+
 
 
 
@@ -2886,15 +3155,21 @@ bool RunSuperHubFactory(
 
 
 
+
+
     UpdateMasterDashboard(
 
         instanceId);
 
 
 
+
+
     return false;
 
 }
+
+
 
 
 
@@ -2918,13 +3193,29 @@ void RunActiveFactories(
 
         instanceId >= 10)
 
+    {
+
         return;
+
+    }
+
+
+
+
+
+    if (cycle <= 0)
+
+        cycle = 1;
+
+
 
 
 
     g_FactoryCycle[instanceId] =
 
         cycle;
+
+
 
 
 
@@ -2936,13 +3227,19 @@ void RunActiveFactories(
 
 
 
+
+
     AddLog(
 
         instanceId,
 
         "SUPER HUB: INIZIO CICLO " +
 
-        std::to_string(cycle));
+        std::to_string(
+
+            cycle));
+
+
 
 
 
@@ -2970,11 +3267,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // CASEIFICIO
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3032,11 +3331,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // FORNO DEL PANE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3144,11 +3445,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // FORNO DEI PASTICCI
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3246,11 +3549,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // ZUCCHERIFICIO
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3298,11 +3603,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // MANGIMIFICIO
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3370,11 +3677,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // SPREMITRICE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3444,6 +3753,8 @@ void RunActiveFactories(
 
 
 
+
+
     // ========================================================
 
     // GRUPPO 2
@@ -3468,11 +3779,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // BARBECUE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3570,11 +3883,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // GELATERIA
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3642,11 +3957,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // NEGOZIO DOLCI
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3684,11 +4001,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // MARMELLATE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3756,11 +4075,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // CUCITRICE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3818,11 +4139,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // CAFFETTERIA
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3900,11 +4223,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // CARAMELLE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -3974,6 +4299,8 @@ void RunActiveFactories(
 
 
 
+
+
     // ========================================================
 
     // GRUPPO 3
@@ -3998,11 +4325,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // IMPASTATRICE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -4040,11 +4369,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // PASTICCERIA
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -4132,11 +4463,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // TELAIO
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -4214,11 +4547,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // ZUPPE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -4256,11 +4591,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // SALSE
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -4338,11 +4675,13 @@ void RunActiveFactories(
 
 
 
-        // ----------------------------------------------------
+
+
+        // ====================================================
 
         // PASTA KITCHEN
 
-        // ----------------------------------------------------
+        // ====================================================
 
 
 
@@ -4372,6 +4711,8 @@ void RunActiveFactories(
 
 
 
+
+
     // ========================================================
 
     // FINE CICLO
@@ -4386,7 +4727,11 @@ void RunActiveFactories(
 
         "SUPER HUB: FINE CICLO " +
 
-        std::to_string(cycle));
+        std::to_string(
+
+            cycle));
+
+
 
 
 
@@ -4397,6 +4742,8 @@ void RunActiveFactories(
         "################################################");
 
 }
+
+
 
 
 
@@ -4418,17 +4765,29 @@ void RunActiveFactories(
 
         instanceId >= 10)
 
+    {
+
         return;
+
+    }
+
+
 
 
 
     int currentCycle =
 
-        (g_FactoryCycle[instanceId] > 0)
+        g_FactoryCycle[instanceId];
 
-        ? g_FactoryCycle[instanceId]
 
-        : 1;
+
+
+
+    if (currentCycle <= 0)
+
+        currentCycle = 1;
+
+
 
 
 
