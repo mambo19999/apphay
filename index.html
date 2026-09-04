@@ -4002,53 +4002,45 @@ void CheckAndReturnHome(int instanceId) {
 }
 // ============================================================
 
-// SUPER HUB FABBRICHE - VERSIONE PULITA
+// SUPER HUB FABBRICHE
 
 // ============================================================
 
 //
 
-// IMPORTANTE:
+// VERSIONE DEFINITIVA
+
+//
+
+// vuoto.png = SLOT LIBERO
+
+// assenza vuoto.png = FABBRICA PIENA
+
+//
+
+// - ricerca vuoto.png ad ogni produzione
+
+// - nuovo screenshot dopo ogni trascinamento
+
+// - apertura fabbrica con tap ogni 300 ms
+
+// - stop immediato quando il menu è aperto
+
+// - ricerca fabbrica multi-scale
+
+// - ricerca ricette multi-scale
+
+// - ADB senza finestra nera
+
+// - 3 gruppi di fabbriche
 
 // - NON MODIFICARE FindImage()
-
-// - vuoto.png = SLOT LIBERO
-
-// - se non trova vuoto.png = FABBRICA PIENA
-
-// - le RICETTE vengono cercate con MULTI-SCALE
-
-// - dopo ogni trascinamento viene rifatta la ricerca
-
-// - apertura fabbrica con TAP ogni 300 ms
-
-// - massimo 12 tentativi apertura
-
-// - massimo 10 produzioni per sicurezza
-
-// - nessun system() per lo swipe
-
-// - niente finestre nere System32
-
-// - gruppi 1 / 2 / 3 separati
-
-// ============================================================
-
-
-
-
-
-// ============================================================
-
-// STATO SUPER HUB
 
 // ============================================================
 
 
 
 static int g_FactoryCycle[10] = { 0 };
-
-
 
 static std::string g_SuperHubState[10];
 
@@ -4058,27 +4050,13 @@ static std::string g_SuperHubState[10];
 
 // ============================================================
 
-// GRUPPI FABBRICHE
-
-// ============================================================
-
-//
-
-// GRUPPO 1 -> cicli 1,4,7,10...
-
-// GRUPPO 2 -> cicli 2,5,8,11...
-
-// GRUPPO 3 -> cicli 3,6,9,12...
+// GRUPPI
 
 // ============================================================
 
 
 
-bool IsFactoryGroupActive(
-
-    int cycle,
-
-    int group)
+bool IsFactoryGroupActive(int cycle, int group)
 
 {
 
@@ -4088,9 +4066,7 @@ bool IsFactoryGroupActive(
 
 
 
-    int currentGroup =
-
-        ((cycle - 1) % 3) + 1;
+    int currentGroup = ((cycle - 1) % 3) + 1;
 
 
 
@@ -4121,6 +4097,38 @@ struct SuperHubRecipe
     int amount;
 
 };
+
+
+
+
+
+// ============================================================
+
+// DICHIARAZIONE ANTICIPATA
+
+//
+
+// IMPORTANTE:
+
+// Deve stare QUI, prima di qualsiasi chiamata a
+
+// RunSuperHubFactory() nel resto del BotEngine.cpp.
+
+// ============================================================
+
+
+
+bool RunSuperHubFactory(
+
+    int instanceId,
+
+    const std::string& factoryTemplate,
+
+    const std::vector<SuperHubRecipe>& recipes,
+
+    const std::string& factoryName,
+
+    std::string& farmState);
 
 
 
@@ -4198,7 +4206,7 @@ bool SuperHubImageExists(
 
 // ============================================================
 
-// ADB SWIPE SENZA FINESTRA
+// ADB SWIPE SENZA FINESTRA NERA
 
 // ============================================================
 
@@ -4248,37 +4256,17 @@ bool AdbSwipeHidden(
 
 
 
-    ZeroMemory(
+    ZeroMemory(&si, sizeof(si));
 
-        &si,
-
-        sizeof(si));
+    ZeroMemory(&pi, sizeof(pi));
 
 
 
-    ZeroMemory(
+    si.cb = sizeof(si);
 
-        &pi,
+    si.dwFlags = STARTF_USESHOWWINDOW;
 
-        sizeof(pi));
-
-
-
-    si.cb =
-
-        sizeof(si);
-
-
-
-    si.dwFlags =
-
-        STARTF_USESHOWWINDOW;
-
-
-
-    si.wShowWindow =
-
-        SW_HIDE;
+    si.wShowWindow = SW_HIDE;
 
 
 
@@ -4346,15 +4334,9 @@ bool AdbSwipeHidden(
 
 
 
-    CloseHandle(
+    CloseHandle(pi.hThread);
 
-        pi.hThread);
-
-
-
-    CloseHandle(
-
-        pi.hProcess);
+    CloseHandle(pi.hProcess);
 
 
 
@@ -4368,27 +4350,21 @@ bool AdbSwipeHidden(
 
 // ============================================================
 
-// RICERCA GENERICA MULTI-SCALE
+// RICERCA FABBRICA MULTI-SCALE
 
-// USATA SOLO DAL SUPER HUB
-
-//
-
-// NON TOCCA FindImage()
+// NON MODIFICA FindImage()
 
 // ============================================================
 
 
 
-bool FindSuperHubMultiScale(
+bool FindFactoryMultiScale(
 
     const cv::Mat& screen,
 
-    const std::string& templatePath,
+    const std::string& factoryTemplate,
 
-    MatchResult& bestResult,
-
-    float minimumThreshold = 0.55f)
+    MatchResult& bestResult)
 
 {
 
@@ -4418,7 +4394,7 @@ bool FindSuperHubMultiScale(
 
         cv::imread(
 
-            templatePath,
+            factoryTemplate,
 
             cv::IMREAD_COLOR);
 
@@ -4433,10 +4409,6 @@ bool FindSuperHubMultiScale(
     const float scales[] =
 
     {
-
-    1.10f,
-
-    1.05f,
 
     1.00f,
 
@@ -4458,13 +4430,13 @@ bool FindSuperHubMultiScale(
 
     0.55f,
 
-    0.50f,
-
-    0.45f,
-
-    0.40f
+    0.50f
 
     };
+
+
+
+    double bestScore = 0.0;
 
 
 
@@ -4472,47 +4444,27 @@ bool FindSuperHubMultiScale(
 
 
 
-    try
+    if (screen.channels() == 3)
 
     {
 
-        if (screen.channels() == 3)
+        cv::cvtColor(
 
-        {
+            screen,
 
-            cv::cvtColor(
+            grayScreen,
 
-                screen,
-
-                grayScreen,
-
-                cv::COLOR_BGR2GRAY);
-
-        }
-
-        else
-
-        {
-
-            grayScreen =
-
-                screen;
-
-        }
+            cv::COLOR_BGR2GRAY);
 
     }
 
-    catch (...)
+    else
 
     {
 
-        return false;
+        grayScreen = screen;
 
     }
-
-
-
-    double bestScore = 0.0;
 
 
 
@@ -4524,9 +4476,7 @@ bool FindSuperHubMultiScale(
 
             static_cast<int>(
 
-                originalTemplate.cols *
-
-                scale);
+                originalTemplate.cols * scale);
 
 
 
@@ -4534,21 +4484,15 @@ bool FindSuperHubMultiScale(
 
             static_cast<int>(
 
-                originalTemplate.rows *
-
-                scale);
+                originalTemplate.rows * scale);
 
 
 
-        if (newWidth < 8 ||
+        if (newWidth < 10 ||
 
-            newHeight < 8)
-
-        {
+            newHeight < 10)
 
             continue;
-
-        }
 
 
 
@@ -4556,11 +4500,7 @@ bool FindSuperHubMultiScale(
 
             newHeight > screen.rows)
 
-        {
-
             continue;
-
-        }
 
 
 
@@ -4630,12 +4570,6 @@ bool FindSuperHubMultiScale(
 
 
 
-        if (grayTemplate.empty())
-
-            continue;
-
-
-
         cv::Mat matchResult;
 
 
@@ -4702,17 +4636,13 @@ bool FindSuperHubMultiScale(
 
         {
 
-            bestScore =
-
-                maxVal;
+            bestScore = maxVal;
 
 
 
             bestResult.score =
 
-                static_cast<float>(
-
-                    maxVal);
+                static_cast<float>(maxVal);
 
 
 
@@ -4730,19 +4660,15 @@ bool FindSuperHubMultiScale(
 
                 (newHeight / 2);
 
+
+
+            bestResult.found =
+
+                (maxVal >= 0.60);
+
         }
 
     }
-
-
-
-    bestResult.found =
-
-        bestScore >=
-
-        static_cast<double>(
-
-            minimumThreshold);
 
 
 
@@ -4756,31 +4682,331 @@ bool FindSuperHubMultiScale(
 
 // ============================================================
 
-// RICERCA FABBRICA MULTI-SCALE
+// RICERCA RICETTA MULTI-SCALE
 
 // ============================================================
 
 
 
-bool FindFactoryMultiScale(
+bool FindSuperHubRecipeMultiScale(
 
     const cv::Mat& screen,
 
-    const std::string& factoryTemplate,
+    const std::string& imagePath,
 
-    MatchResult& bestResult)
+    MatchResult& result)
 
 {
 
-    return FindSuperHubMultiScale(
+    result =
 
-        screen,
+    {
 
-        factoryTemplate,
+    false,
 
-        bestResult,
+    -1,
 
-        0.60f);
+    -1,
+
+    0.0f
+
+    };
+
+
+
+    if (screen.empty())
+
+        return false;
+
+
+
+    cv::Mat original =
+
+        cv::imread(
+
+            imagePath,
+
+            cv::IMREAD_COLOR);
+
+
+
+    if (original.empty())
+
+        return false;
+
+
+
+    const float scales[] =
+
+    {
+
+    1.10f,
+
+    1.05f,
+
+    1.00f,
+
+    0.95f,
+
+    0.90f,
+
+    0.85f,
+
+    0.80f,
+
+    0.75f,
+
+    0.70f,
+
+    0.65f,
+
+    0.60f,
+
+    0.55f,
+
+    0.50f,
+
+    0.45f,
+
+    0.40f
+
+    };
+
+
+
+    cv::Mat grayScreen;
+
+
+
+    if (screen.channels() == 3)
+
+    {
+
+        cv::cvtColor(
+
+            screen,
+
+            grayScreen,
+
+            cv::COLOR_BGR2GRAY);
+
+    }
+
+    else
+
+    {
+
+        grayScreen = screen;
+
+    }
+
+
+
+    double bestScore = 0.0;
+
+
+
+    for (float scale : scales)
+
+    {
+
+        int width =
+
+            static_cast<int>(
+
+                original.cols * scale);
+
+
+
+        int height =
+
+            static_cast<int>(
+
+                original.rows * scale);
+
+
+
+        if (width < 8 ||
+
+            height < 8)
+
+            continue;
+
+
+
+        if (width > screen.cols ||
+
+            height > screen.rows)
+
+            continue;
+
+
+
+        cv::Mat resized;
+
+
+
+        try
+
+        {
+
+            cv::resize(
+
+                original,
+
+                resized,
+
+                cv::Size(width, height),
+
+                0,
+
+                0,
+
+                cv::INTER_AREA);
+
+        }
+
+        catch (...)
+
+        {
+
+            continue;
+
+        }
+
+
+
+        cv::Mat grayTemplate;
+
+
+
+        try
+
+        {
+
+            cv::cvtColor(
+
+                resized,
+
+                grayTemplate,
+
+                cv::COLOR_BGR2GRAY);
+
+        }
+
+        catch (...)
+
+        {
+
+            continue;
+
+        }
+
+
+
+        cv::Mat match;
+
+
+
+        try
+
+        {
+
+            cv::matchTemplate(
+
+                grayScreen,
+
+                grayTemplate,
+
+                match,
+
+                cv::TM_CCOEFF_NORMED);
+
+        }
+
+        catch (...)
+
+        {
+
+            continue;
+
+        }
+
+
+
+        if (match.empty())
+
+            continue;
+
+
+
+        double minVal = 0.0;
+
+        double maxVal = 0.0;
+
+
+
+        cv::Point minLoc;
+
+        cv::Point maxLoc;
+
+
+
+        cv::minMaxLoc(
+
+            match,
+
+            &minVal,
+
+            &maxVal,
+
+            &minLoc,
+
+            &maxLoc);
+
+
+
+        if (maxVal > bestScore)
+
+        {
+
+            bestScore = maxVal;
+
+
+
+            result.score =
+
+                static_cast<float>(maxVal);
+
+
+
+            result.x =
+
+                maxLoc.x +
+
+                (width / 2);
+
+
+
+            result.y =
+
+                maxLoc.y +
+
+                (height / 2);
+
+
+
+            result.found =
+
+                (maxVal >= 0.52);
+
+        }
+
+    }
+
+
+
+    return result.found;
 
 }
 
@@ -4791,16 +5017,6 @@ bool FindFactoryMultiScale(
 // ============================================================
 
 // CERCA RICETTA NEL MENU
-
-//
-
-// QUI È LA CORREZIONE PRINCIPALE.
-
-//
-
-// Prima veniva usata FindImage().
-
-// Ora la ricetta viene cercata MULTI-SCALE.
 
 // ============================================================
 
@@ -4838,45 +5054,27 @@ bool FindRecipeInFactoryMenu(
 
 
 
-
-
-    // --------------------------------------------------------
-
-    // PROVA IMMAGINE IN PRODUZIONE
-
-    // --------------------------------------------------------
+    MatchResult cooking;
 
 
 
-    if (!recipe.cookingImage.empty() &&
+    if (SuperHubImageExists(
 
-        SuperHubImageExists(
-
-            recipe.cookingImage))
+        recipe.cookingImage))
 
     {
 
-        MatchResult cookingRes;
-
-
-
-        if (FindSuperHubMultiScale(
+        if (FindSuperHubRecipeMultiScale(
 
             screen,
 
             recipe.cookingImage,
 
-            cookingRes,
-
-            0.55f))
+            cooking))
 
         {
 
-            result =
-
-                cookingRes;
-
-
+            result = cooking;
 
             return true;
 
@@ -4886,53 +5084,33 @@ bool FindRecipeInFactoryMenu(
 
 
 
-
-
-    // --------------------------------------------------------
-
-    // PROVA IMMAGINE FINITA
-
-    // --------------------------------------------------------
+    MatchResult finished;
 
 
 
-    if (!recipe.finishedImage.empty() &&
+    if (SuperHubImageExists(
 
-        SuperHubImageExists(
-
-            recipe.finishedImage))
+        recipe.finishedImage))
 
     {
 
-        MatchResult finishedRes;
-
-
-
-        if (FindSuperHubMultiScale(
+        if (FindSuperHubRecipeMultiScale(
 
             screen,
 
             recipe.finishedImage,
 
-            finishedRes,
-
-            0.55f))
+            finished))
 
         {
 
-            result =
-
-                finishedRes;
-
-
+            result = finished;
 
             return true;
 
         }
 
     }
-
-
 
 
 
@@ -4946,7 +5124,7 @@ bool FindRecipeInFactoryMenu(
 
 // ============================================================
 
-// CERCA QUALSIASI RICETTA DISPONIBILE
+// CERCA LA MIGLIORE RICETTA DISPONIBILE
 
 // ============================================================
 
@@ -4964,39 +5142,17 @@ bool FindAnyAvailableRecipe(
 
 {
 
-    selectedMatch =
-
-    {
-
-    false,
-
-    -1,
-
-    -1,
-
-    0.0f
-
-    };
-
-
-
     if (screen.empty())
 
         return false;
 
 
 
-
-
-    double bestScore = 0.0;
+    bool foundAnything = false;
 
 
 
-    bool found =
-
-        false;
-
-
+    float bestScore = 0.0f;
 
 
 
@@ -5020,7 +5176,7 @@ bool FindAnyAvailableRecipe(
 
 
 
-        MatchResult res;
+        MatchResult current;
 
 
 
@@ -5030,7 +5186,7 @@ bool FindAnyAvailableRecipe(
 
             recipe,
 
-            res))
+            current))
 
         {
 
@@ -5040,33 +5196,19 @@ bool FindAnyAvailableRecipe(
 
 
 
+        if (!foundAnything ||
 
-
-        // ----------------------------------------------------
-
-        // PRENDIAMO LA MIGLIORE RICETTA TROVATA
-
-        // ----------------------------------------------------
-
-
-
-        if (!found ||
-
-            res.score >
-
-            bestScore)
+            current.score > bestScore)
 
         {
 
-            found =
-
-                true;
+            foundAnything = true;
 
 
 
             bestScore =
 
-                res.score;
+                current.score;
 
 
 
@@ -5078,7 +5220,7 @@ bool FindAnyAvailableRecipe(
 
             selectedMatch =
 
-                res;
+                current;
 
         }
 
@@ -5086,9 +5228,7 @@ bool FindAnyAvailableRecipe(
 
 
 
-
-
-    return found;
+    return foundAnything;
 
 }
 
@@ -5098,17 +5238,7 @@ bool FindAnyAvailableRecipe(
 
 // ============================================================
 
-// CONTROLLO MENU FABBRICA
-
-//
-
-// NON USIAMO LA PRESENZA DELLA RICETTA PER DIRE
-
-// CHE IL MENU È APERTO.
-
-//
-
-// Basta trovare uno dei marker del menu.
+// CONTROLLA MENU FABBRICA
 
 // ============================================================
 
@@ -5125,16 +5255,6 @@ bool IsSuperHubFactoryMenuOpen(
     if (screen.empty())
 
         return false;
-
-
-
-
-
-    // --------------------------------------------------------
-
-    // CROSS
-
-    // --------------------------------------------------------
 
 
 
@@ -5162,8 +5282,6 @@ bool IsSuperHubFactoryMenuOpen(
 
 
 
-
-
     cross =
 
         FindImage(
@@ -5185,8 +5303,6 @@ bool IsSuperHubFactoryMenuOpen(
     if (cross.found)
 
         return true;
-
-
 
 
 
@@ -5214,16 +5330,6 @@ bool IsSuperHubFactoryMenuOpen(
 
 
 
-
-
-    // --------------------------------------------------------
-
-    // VUOTO
-
-    // --------------------------------------------------------
-
-
-
     MatchResult emptySlot =
 
         FindImage(
@@ -5245,16 +5351,6 @@ bool IsSuperHubFactoryMenuOpen(
     if (emptySlot.found)
 
         return true;
-
-
-
-
-
-    // --------------------------------------------------------
-
-    // FULMINE
-
-    // --------------------------------------------------------
 
 
 
@@ -5282,8 +5378,6 @@ bool IsSuperHubFactoryMenuOpen(
 
 
 
-
-
     return false;
 
 }
@@ -5294,21 +5388,7 @@ bool IsSuperHubFactoryMenuOpen(
 
 // ============================================================
 
-// CERCA VUOTO
-
-//
-
-// IMPORTANTE:
-
-//
-
-// vuoto.png = UNO SLOT LIBERO
-
-//
-
-// La funzione viene richiamata nuovamente dopo OGNI
-
-// trascinamento.
+// CERCA SLOT VUOTO
 
 // ============================================================
 
@@ -5344,8 +5424,6 @@ bool FindEmptyProductionSlot(
 
 
 
-
-
     emptySlot =
 
         FindImage(
@@ -5364,8 +5442,6 @@ bool FindEmptyProductionSlot(
 
 
 
-
-
     return emptySlot.found;
 
 }
@@ -5376,17 +5452,7 @@ bool FindEmptyProductionSlot(
 
 // ============================================================
 
-// PRODUZIONE COMPATIBILITÀ
-
-//
-
-// Manteniamo questa funzione perché il BotEngine potrebbe
-
-// chiamarla direttamente.
-
-//
-
-// La logica reale usa sempre vuoto.png.
+// PRODUZIONE FABBRICA
 
 // ============================================================
 
@@ -5414,75 +5480,739 @@ bool RunFactoryProduction(
 
 {
 
-    SuperHubRecipe recipe =
+    if (instanceId < 0 ||
 
-        MakeRecipe(
+        instanceId >= 10)
 
-            finishedProductTemplate,
-
-            cookingProductTemplate,
-
-            productionCount);
+        return false;
 
 
 
-    std::vector<SuperHubRecipe> recipes;
+    (void)unusedTemplate;
 
 
 
-    recipes.push_back(
-
-        recipe);
-
-
-
-
-
-    // --------------------------------------------------------
-
-    // USA LA STESSA LOGICA DEL SUPER HUB
-
-    // --------------------------------------------------------
-
-
-
-    return RunSuperHubFactory(
+    AddLog(
 
         instanceId,
 
+        "SUPER HUB: " +
+
+        factoryName +
+
+        " -> INIZIO");
+
+
+
+    if (!CheckAndRestoreGame(
+
+        instanceId))
+
+    {
+
+        return false;
+
+    }
+
+
+
+    CheckAndReturnHome(
+
+        instanceId);
+
+
+
+    BotInstance& bot =
+
+        g_Bots[instanceId];
+
+
+
+    cv::Mat screen =
+
+        CaptureInstanceScreen(
+
+            instanceId,
+
+            kAdbPath,
+
+            bot.adbSerial);
+
+
+
+    if (screen.empty())
+
+        return false;
+
+
+
+    MatchResult factoryRes;
+
+
+
+    if (!FindFactoryMultiScale(
+
+        screen,
+
         factoryTemplate,
 
-        recipes,
+        factoryRes))
 
-        factoryName,
+    {
 
-        farmState);
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": FABBRICA NON TROVATA");
+
+
+
+        return false;
+
+    }
+
+
+
+    bool menuOpened = false;
+
+
+
+    int factoryX =
+
+        factoryRes.x;
+
+
+
+    int factoryY =
+
+        factoryRes.y;
+
+
+
+    // ========================================================
+
+    // APERTURA
+
+    // ========================================================
+
+
+
+    for (int attempt = 1;
+
+        attempt <= 12;
+
+        attempt++)
+
+    {
+
+        AdbTap(
+
+            instanceId,
+
+            factoryX,
+
+            factoryY);
+
+
+
+        std::this_thread::sleep_for(
+
+            std::chrono::milliseconds(300));
+
+
+
+        cv::Mat openedScreen =
+
+            CaptureInstanceScreen(
+
+                instanceId,
+
+                kAdbPath,
+
+                bot.adbSerial);
+
+
+
+        if (openedScreen.empty())
+
+            continue;
+
+
+
+        if (IsSuperHubFactoryMenuOpen(
+
+            instanceId,
+
+            openedScreen))
+
+        {
+
+            menuOpened = true;
+
+
+
+            screen =
+
+                openedScreen;
+
+
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": MENU APERTO");
+
+
+
+            break;
+
+        }
+
+
+
+        // ----------------------------------------------------
+
+        // LA FABBRICA PUÒ ESSERSI SPOSTATA:
+
+        // aggiorna le coordinate prima del tap successivo
+
+        // ----------------------------------------------------
+
+
+
+        MatchResult refreshedFactory;
+
+
+
+        if (FindFactoryMultiScale(
+
+            openedScreen,
+
+            factoryTemplate,
+
+            refreshedFactory))
+
+        {
+
+            factoryX =
+
+                refreshedFactory.x;
+
+
+
+            factoryY =
+
+                refreshedFactory.y;
+
+        }
+
+    }
+
+
+
+    if (!menuOpened)
+
+    {
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": MENU NON APERTO");
+
+
+
+        SafeCloseMenu(
+
+            instanceId,
+
+            kAdbPath,
+
+            bot.adbSerial);
+
+
+
+        return false;
+
+    }
+
+
+
+    // ========================================================
+
+    // PRODUZIONE
+
+    // ========================================================
+
+
+
+    int produced = 0;
+
+
+
+    int maxProductions =
+
+        productionCount;
+
+
+
+    if (maxProductions <= 0)
+
+        maxProductions = 10;
+
+
+
+    if (maxProductions > 10)
+
+        maxProductions = 10;
+
+
+
+    for (int i = 0;
+
+        i < maxProductions;
+
+        i++)
+
+    {
+
+        // ----------------------------------------------------
+
+        // SCREEN NUOVA
+
+        // ----------------------------------------------------
+
+
+
+        cv::Mat currentScreen =
+
+            CaptureInstanceScreen(
+
+                instanceId,
+
+                kAdbPath,
+
+                bot.adbSerial);
+
+
+
+        if (currentScreen.empty())
+
+            break;
+
+
+
+        // ----------------------------------------------------
+
+        // CERCA SEMPRE VUOTO.PNG
+
+        // ----------------------------------------------------
+
+
+
+        MatchResult currentEmptySlot;
+
+
+
+        if (!FindEmptyProductionSlot(
+
+            currentScreen,
+
+            currentEmptySlot))
+
+        {
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": NESSUN SLOT VUOTO -> STOP");
+
+
+
+            break;
+
+        }
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": SLOT VUOTO X=" +
+
+            std::to_string(
+
+                currentEmptySlot.x) +
+
+            " Y=" +
+
+            std::to_string(
+
+                currentEmptySlot.y));
+
+
+
+        // ----------------------------------------------------
+
+        // CERCA RICETTA
+
+        // ----------------------------------------------------
+
+
+
+        SuperHubRecipe selectedRecipe;
+
+
+
+        MatchResult productRes;
+
+
+
+        bool recipeFound = false;
+
+
+
+        for (int retry = 0;
+
+            retry < 3;
+
+            retry++)
+
+        {
+
+            cv::Mat recipeScreen =
+
+                CaptureInstanceScreen(
+
+                    instanceId,
+
+                    kAdbPath,
+
+                    bot.adbSerial);
+
+
+
+            if (recipeScreen.empty())
+
+                continue;
+
+
+
+            if (FindAnyAvailableRecipe(
+
+                recipeScreen,
+
+                {
+
+                MakeRecipe(
+
+                finishedProductTemplate,
+
+                cookingProductTemplate,
+
+                1)
+
+                },
+
+                selectedRecipe,
+
+                productRes))
+
+            {
+
+                recipeFound = true;
+
+                break;
+
+            }
+
+
+
+            std::this_thread::sleep_for(
+
+                std::chrono::milliseconds(250));
+
+        }
+
+
+
+        if (!recipeFound)
+
+        {
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": RICETTA NON TROVATA -> STOP");
+
+
+
+            break;
+
+        }
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": RICETTA TROVATA X=" +
+
+            std::to_string(productRes.x) +
+
+            " Y=" +
+
+            std::to_string(productRes.y) +
+
+            " SCORE=" +
+
+            std::to_string(productRes.score));
+
+
+
+        // ----------------------------------------------------
+
+        // TRASCINAMENTO
+
+        // ----------------------------------------------------
+
+
+
+        bool swipeOk =
+
+            AdbSwipeHidden(
+
+                kAdbPath,
+
+                bot.adbSerial,
+
+                productRes.x,
+
+                productRes.y,
+
+                currentEmptySlot.x,
+
+                currentEmptySlot.y,
+
+                450);
+
+
+
+        if (!swipeOk)
+
+        {
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": ERRORE ADB SWIPE -> STOP");
+
+
+
+            break;
+
+        }
+
+
+
+        produced++;
+
+
+
+        std::this_thread::sleep_for(
+
+            std::chrono::milliseconds(600));
+
+
+
+        // ----------------------------------------------------
+
+        // DOPO OGNI TRASCINAMENTO:
+
+        // SCREEN NUOVA + NUOVO VUOTO
+
+        // ----------------------------------------------------
+
+
+
+        cv::Mat afterSwipe =
+
+            CaptureInstanceScreen(
+
+                instanceId,
+
+                kAdbPath,
+
+                bot.adbSerial);
+
+
+
+        if (afterSwipe.empty())
+
+            break;
+
+
+
+        MatchResult nextEmpty;
+
+
+
+        if (!FindEmptyProductionSlot(
+
+            afterSwipe,
+
+            nextEmpty))
+
+        {
+
+            AddLog(
+
+                instanceId,
+
+                factoryName +
+
+                ": FABBRICA PIENA -> STOP");
+
+
+
+            break;
+
+        }
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": NUOVO SLOT VUOTO TROVATO");
+
+
+
+        screen =
+
+            afterSwipe;
+
+    }
+
+
+
+    // ========================================================
+
+    // CHIUSURA
+
+    // ========================================================
+
+
+
+    SafeCloseMenu(
+
+        instanceId,
+
+        kAdbPath,
+
+        bot.adbSerial);
+
+
+
+    // ========================================================
+
+    // RISULTATO
+
+    // ========================================================
+
+
+
+    if (produced > 0)
+
+    {
+
+        farmState =
+
+            factoryName +
+
+            ": prodotti " +
+
+            std::to_string(produced);
+
+
+
+        AddLog(
+
+            instanceId,
+
+            factoryName +
+
+            ": FINE - prodotti=" +
+
+            std::to_string(produced));
+
+
+
+        UpdateMasterDashboard(
+
+            instanceId);
+
+
+
+        return true;
+
+    }
+
+
+
+    farmState =
+
+        factoryName +
+
+        ": nessuna produzione";
+
+
+
+    AddLog(
+
+        instanceId,
+
+        factoryName +
+
+        ": FINE - NESSUNA PRODUZIONE");
+
+
+
+    UpdateMasterDashboard(
+
+        instanceId);
+
+
+
+    return false;
 
 }
-
-
-
-
-
-// ============================================================
-
-// DICHIARAZIONE ANTICIPATA
-
-// ============================================================
-
-
-
-bool RunSuperHubFactory(
-
-    int instanceId,
-
-    const std::string& factoryTemplate,
-
-    const std::vector<SuperHubRecipe>& recipes,
-
-    const std::string& factoryName,
-
-    std::string& farmState);
 
 
 
@@ -5510,25 +6240,23 @@ bool RunSuperHubRecipe(
 
 {
 
-    std::vector<SuperHubRecipe> recipes;
-
-
-
-    recipes.push_back(
-
-        recipe);
-
-
-
-    return RunSuperHubFactory(
+    return RunFactoryProduction(
 
         instanceId,
 
         factoryTemplate,
 
-        recipes,
+        recipe.finishedImage,
+
+        recipe.cookingImage,
+
+        "",
+
+        recipe.amount,
 
         factoryName,
+
+        factoryName + ": produzione",
 
         farmState);
 
@@ -5564,13 +6292,7 @@ bool RunSuperHubFactory(
 
         instanceId >= 10)
 
-    {
-
         return false;
-
-    }
-
-
 
 
 
@@ -5579,8 +6301,6 @@ bool RunSuperHubFactory(
         instanceId,
 
         "================================================");
-
-
 
 
 
@@ -5593,16 +6313,6 @@ bool RunSuperHubFactory(
         factoryName +
 
         " INIZIO");
-
-
-
-
-
-    // ========================================================
-
-    // CONTROLLO PNG FABBRICA
-
-    // ========================================================
 
 
 
@@ -5622,33 +6332,9 @@ bool RunSuperHubFactory(
 
 
 
-        farmState =
-
-            factoryName +
-
-            ": PNG mancante";
-
-
-
-        UpdateMasterDashboard(
-
-            instanceId);
-
-
-
         return false;
 
     }
-
-
-
-
-
-    // ========================================================
-
-    // CONTROLLO GIOCO
-
-    // ========================================================
 
 
 
@@ -5664,21 +6350,7 @@ bool RunSuperHubFactory(
 
             factoryName +
 
-            ": gioco non disponibile");
-
-
-
-        farmState =
-
-            factoryName +
-
-            ": gioco non disponibile";
-
-
-
-        UpdateMasterDashboard(
-
-            instanceId);
+            ": GIOCO NON DISPONIBILE");
 
 
 
@@ -5688,37 +6360,15 @@ bool RunSuperHubFactory(
 
 
 
-
-
-    // ========================================================
-
-    // TORNA A CASA
-
-    // ========================================================
-
-
-
     CheckAndReturnHome(
 
         instanceId);
 
 
 
-
-
     BotInstance& bot =
 
         g_Bots[instanceId];
-
-
-
-
-
-    // ========================================================
-
-    // SCREEN CASA
-
-    // ========================================================
 
 
 
@@ -5734,27 +6384,9 @@ bool RunSuperHubFactory(
 
 
 
-
-
     if (screen.empty())
 
-    {
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": SCREEN VUOTA");
-
-
-
         return false;
-
-    }
-
-
 
 
 
@@ -5767,8 +6399,6 @@ bool RunSuperHubFactory(
 
 
     MatchResult factoryRes;
-
-
 
 
 
@@ -5812,8 +6442,6 @@ bool RunSuperHubFactory(
 
 
 
-
-
     int factoryX =
 
         factoryRes.x;
@@ -5826,47 +6454,31 @@ bool RunSuperHubFactory(
 
 
 
-
-
     AddLog(
 
         instanceId,
 
         factoryName +
 
-        ": FABBRICA TROVATA X=" +
+        ": FABBRICA X=" +
 
         std::to_string(factoryX) +
 
         " Y=" +
 
-        std::to_string(factoryY) +
-
-        " SCORE=" +
-
-        std::to_string(factoryRes.score));
-
-
+        std::to_string(factoryY));
 
 
 
     // ========================================================
 
-    // APERTURA FABBRICA
-
-    //
-
-    // TAP OGNI 300ms
+    // APERTURA
 
     // ========================================================
 
 
 
-    bool menuOpened =
-
-        false;
-
-
+    bool menuOpened = false;
 
 
 
@@ -5884,13 +6496,11 @@ bool RunSuperHubFactory(
 
             factoryName +
 
-            ": TAP APERTURA " +
+            ": TAP " +
 
             std::to_string(attempt) +
 
             "/12");
-
-
 
 
 
@@ -5904,17 +6514,13 @@ bool RunSuperHubFactory(
 
 
 
-
-
         std::this_thread::sleep_for(
 
             std::chrono::milliseconds(300));
 
 
 
-
-
-        cv::Mat newScreen =
+        cv::Mat openedScreen =
 
             CaptureInstanceScreen(
 
@@ -5926,13 +6532,19 @@ bool RunSuperHubFactory(
 
 
 
-
-
-        if (newScreen.empty())
+        if (openedScreen.empty())
 
             continue;
 
 
+
+        // ----------------------------------------------------
+
+        // APPENA IL MENU È APERTO:
+
+        // SMETTE IMMEDIATAMENTE DI PREMERE
+
+        // ----------------------------------------------------
 
 
 
@@ -5940,21 +6552,17 @@ bool RunSuperHubFactory(
 
             instanceId,
 
-            newScreen))
+            openedScreen))
 
         {
 
-            menuOpened =
-
-                true;
+            menuOpened = true;
 
 
 
             screen =
 
-                newScreen;
-
-
+                openedScreen;
 
 
 
@@ -5968,23 +6576,47 @@ bool RunSuperHubFactory(
 
 
 
-
-
             break;
 
         }
 
+
+
+        // ----------------------------------------------------
+
+        // aggiorna coordinate fabbrica
+
+        // ----------------------------------------------------
+
+
+
+        MatchResult refreshedFactory;
+
+
+
+        if (FindFactoryMultiScale(
+
+            openedScreen,
+
+            factoryTemplate,
+
+            refreshedFactory))
+
+        {
+
+            factoryX =
+
+                refreshedFactory.x;
+
+
+
+            factoryY =
+
+                refreshedFactory.y;
+
+        }
+
     }
-
-
-
-
-
-    // ========================================================
-
-    // MENU NON APERTO
-
-    // ========================================================
 
 
 
@@ -6002,15 +6634,11 @@ bool RunSuperHubFactory(
 
 
 
-
-
         farmState =
 
             factoryName +
 
             ": menu non aperto";
-
-
 
 
 
@@ -6020,6 +6648,14 @@ bool RunSuperHubFactory(
 
 
 
+        SafeCloseMenu(
+
+            instanceId,
+
+            kAdbPath,
+
+            bot.adbSerial);
+
 
 
         return false;
@@ -6028,87 +6664,35 @@ bool RunSuperHubFactory(
 
 
 
-
-
     // ========================================================
 
-    // ASPETTA CHE IL MENU SI STABILIZZI
-
-    // ========================================================
-
-
-
-    std::this_thread::sleep_for(
-
-        std::chrono::milliseconds(500));
-
-
-
-
-
-    // ========================================================
-
-    // PRODUZIONE
+    // PRODUZIONE SLOT PER SLOT
 
     // ========================================================
 
 
 
-    int totalProduced =
-
-        0;
+    int produced = 0;
 
 
 
-
-
-    const int MAX_SLOTS_SICUREZZA =
-
-        10;
+    const int maxSlots = 10;
 
 
 
+    for (int slot = 0;
 
+        slot < maxSlots;
 
-    for (int slotNumber = 1;
-
-        slotNumber <= MAX_SLOTS_SICUREZZA;
-
-        slotNumber++)
+        slot++)
 
     {
 
-        AddLog(
+        // ----------------------------------------------------
 
-            instanceId,
+        // SCREEN SEMPRE NUOVA
 
-            factoryName +
-
-            ": ------------------------------");
-
-
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": CONTROLLO SLOT " +
-
-            std::to_string(slotNumber));
-
-
-
-
-
-        // ====================================================
-
-        // NUOVO SCREEN
-
-        // ====================================================
+        // ----------------------------------------------------
 
 
 
@@ -6124,41 +6708,21 @@ bool RunSuperHubFactory(
 
 
 
-
-
         if (currentScreen.empty())
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": SCREEN VUOTA -> STOP");
-
-
 
             break;
 
-        }
 
 
+        // ----------------------------------------------------
 
+        // CERCA VUOTO.PNG
 
-
-        // ====================================================
-
-        // CERCA VUOTO
-
-        // ====================================================
+        // ----------------------------------------------------
 
 
 
         MatchResult emptySlot;
-
-
 
 
 
@@ -6176,21 +6740,7 @@ bool RunSuperHubFactory(
 
                 factoryName +
 
-                ": >>> VUOTO NON TROVATO <<<");
-
-
-
-
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
                 ": FABBRICA PIENA -> STOP");
-
-
 
 
 
@@ -6200,67 +6750,27 @@ bool RunSuperHubFactory(
 
 
 
-
-
         AddLog(
 
             instanceId,
 
             factoryName +
 
-            ": VUOTO TROVATO");
+            ": SLOT VUOTO -> X=" +
 
-
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": SLOT X=" +
-
-            std::to_string(
-
-                emptySlot.x) +
+            std::to_string(emptySlot.x) +
 
             " Y=" +
 
-            std::to_string(
-
-                emptySlot.y));
+            std::to_string(emptySlot.y));
 
 
 
+        // ----------------------------------------------------
 
+        // CERCA LA MIGLIORE RICETTA
 
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": VUOTO SCORE=" +
-
-            std::to_string(
-
-                emptySlot.score));
-
-
-
-
-
-        // ====================================================
-
-        // CERCA RICETTA
-
-        //
-
-        // MULTI-SCALE
-
-        // ====================================================
+        // ----------------------------------------------------
 
 
 
@@ -6272,29 +6782,73 @@ bool RunSuperHubFactory(
 
 
 
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": CERCO RICETTA MULTI-SCALE...");
+        bool recipeFound = false;
 
 
 
+        for (int retry = 0;
+
+            retry < 3;
+
+            retry++)
+
+        {
+
+            cv::Mat recipeScreen =
+
+                CaptureInstanceScreen(
+
+                    instanceId,
+
+                    kAdbPath,
+
+                    bot.adbSerial);
 
 
-        if (!FindAnyAvailableRecipe(
 
-            currentScreen,
+            if (recipeScreen.empty())
 
-            recipes,
+                continue;
 
-            selectedRecipe,
 
-            selectedMatch))
+
+            if (FindAnyAvailableRecipe(
+
+                recipeScreen,
+
+                recipes,
+
+                selectedRecipe,
+
+                selectedMatch))
+
+            {
+
+                recipeFound = true;
+
+
+
+                screen =
+
+                    recipeScreen;
+
+
+
+                break;
+
+            }
+
+
+
+            std::this_thread::sleep_for(
+
+                std::chrono::milliseconds(250));
+
+        }
+
+
+
+        if (!recipeFound)
 
         {
 
@@ -6304,21 +6858,7 @@ bool RunSuperHubFactory(
 
                 factoryName +
 
-                ": >>> NESSUNA RICETTA TROVATA <<<");
-
-
-
-
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": VUOTO C'È MA RICETTA NON RICONOSCIUTA");
-
-
+                ": NESSUNA RICETTA DISPONIBILE -> STOP");
 
 
 
@@ -6328,49 +6868,17 @@ bool RunSuperHubFactory(
 
 
 
-
-
         AddLog(
 
             instanceId,
 
             factoryName +
 
-            ": >>> RICETTA TROVATA <<<");
+            ": RICETTA -> " +
 
+            selectedRecipe.cookingImage +
 
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": RICETTA X=" +
-
-            std::to_string(
-
-                selectedMatch.x) +
-
-            " Y=" +
-
-            std::to_string(
-
-                selectedMatch.y));
-
-
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": RICETTA SCORE=" +
+            " SCORE=" +
 
             std::to_string(
 
@@ -6378,155 +6886,11 @@ bool RunSuperHubFactory(
 
 
 
-
-
-        // ====================================================
-
-        // CONTROLLO COORDINATE
-
-        // ====================================================
-
-
-
-        if (selectedMatch.x < 0 ||
-
-            selectedMatch.y < 0 ||
-
-            emptySlot.x < 0 ||
-
-            emptySlot.y < 0)
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": COORDINATE NON VALIDE -> STOP");
-
-
-
-            break;
-
-        }
-
-
-
-
-
-        // ====================================================
-
-        // EVITA DI TRASCINARE SE RICETTA E SLOT SONO
-
-        // PRATICAMENTE NELLO STESSO PUNTO
-
-        // ====================================================
-
-
-
-        int dx =
-
-            selectedMatch.x -
-
-            emptySlot.x;
-
-
-
-        int dy =
-
-            selectedMatch.y -
-
-            emptySlot.y;
-
-
-
-        int distanceSquared =
-
-            (dx * dx) +
-
-            (dy * dy);
-
-
-
-
-
-        if (distanceSquared < 400)
-
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": RICETTA E SLOT TROPPO VICINI -> STOP");
-
-
-
-            break;
-
-        }
-
-
-
-
-
-        // ====================================================
+        // ----------------------------------------------------
 
         // TRASCINAMENTO
 
-        // ====================================================
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": TRASCINO RICETTA -> VUOTO");
-
-
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": DA (" +
-
-            std::to_string(
-
-                selectedMatch.x) +
-
-            "," +
-
-            std::to_string(
-
-                selectedMatch.y) +
-
-            ") A (" +
-
-            std::to_string(
-
-                emptySlot.x) +
-
-            "," +
-
-            std::to_string(
-
-                emptySlot.y) +
-
-            ")");
-
-
+        // ----------------------------------------------------
 
 
 
@@ -6538,23 +6902,15 @@ bool RunSuperHubFactory(
 
                 bot.adbSerial,
 
-
-
                 selectedMatch.x,
 
                 selectedMatch.y,
-
-
 
                 emptySlot.x,
 
                 emptySlot.y,
 
-
-
                 450);
-
-
 
 
 
@@ -6568,7 +6924,7 @@ bool RunSuperHubFactory(
 
                 factoryName +
 
-                ": ERRORE SWIPE -> STOP");
+                ": SWIPE FALLITO -> STOP");
 
 
 
@@ -6578,47 +6934,21 @@ bool RunSuperHubFactory(
 
 
 
-
-
-        totalProduced++;
-
-
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": TRASCINAMENTO COMPLETATO");
-
-
-
-
-
-        // ====================================================
-
-        // ASPETTA AGGIORNAMENTO MENU
-
-        // ====================================================
+        produced++;
 
 
 
         std::this_thread::sleep_for(
 
-            std::chrono::milliseconds(700));
+            std::chrono::milliseconds(600));
 
 
 
+        // ----------------------------------------------------
 
+        // CONTROLLO DOPO TRASCINAMENTO
 
-        // ====================================================
-
-        // NUOVO SCREEN
-
-        // ====================================================
+        // ----------------------------------------------------
 
 
 
@@ -6634,45 +6964,13 @@ bool RunSuperHubFactory(
 
 
 
-
-
         if (afterSwipe.empty())
 
-        {
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": SCREEN POST-SWIPE VUOTA -> STOP");
-
-
-
             break;
-
-        }
-
-
-
-
-
-        // ====================================================
-
-        // CERCA NUOVAMENTE VUOTO
-
-        //
-
-        // QUESTO È IL CONTROLLO REALE DELLO SLOT.
-
-        // ====================================================
 
 
 
         MatchResult nextEmpty;
-
-
 
 
 
@@ -6690,33 +6988,7 @@ bool RunSuperHubFactory(
 
                 factoryName +
 
-                ": DOPO IL TRASCINAMENTO");
-
-
-
-
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": >>> VUOTO NON TROVATO <<<");
-
-
-
-
-
-            AddLog(
-
-                instanceId,
-
-                factoryName +
-
-                ": >>> FABBRICA PIENA <<<");
-
-
+                ": NON C'È PIÙ VUOTO -> STOP");
 
 
 
@@ -6726,59 +6998,13 @@ bool RunSuperHubFactory(
 
 
 
-
-
         AddLog(
 
             instanceId,
 
             factoryName +
 
-            ": DOPO IL TRASCINAMENTO");
-
-
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": >>> NUOVO VUOTO TROVATO <<<");
-
-
-
-
-
-        AddLog(
-
-            instanceId,
-
-            factoryName +
-
-            ": NUOVO VUOTO X=" +
-
-            std::to_string(
-
-                nextEmpty.x) +
-
-            " Y=" +
-
-            std::to_string(
-
-                nextEmpty.y));
-
-
-
-
-
-        // ====================================================
-
-        // AGGIORNA SCREEN
-
-        // ====================================================
+            ": ALTRO SLOT VUOTO TROVATO");
 
 
 
@@ -6790,25 +7016,11 @@ bool RunSuperHubFactory(
 
 
 
-
-
     // ========================================================
 
-    // CHIUSURA MENU
+    // CHIUSURA
 
     // ========================================================
-
-
-
-    AddLog(
-
-        instanceId,
-
-        factoryName +
-
-        ": CHIUSURA MENU");
-
-
 
 
 
@@ -6822,8 +7034,6 @@ bool RunSuperHubFactory(
 
 
 
-
-
     // ========================================================
 
     // RISULTATO
@@ -6832,7 +7042,7 @@ bool RunSuperHubFactory(
 
 
 
-    if (totalProduced > 0)
+    if (produced > 0)
 
     {
 
@@ -6842,11 +7052,7 @@ bool RunSuperHubFactory(
 
             ": prodotti " +
 
-            std::to_string(
-
-                totalProduced);
-
-
+            std::to_string(produced);
 
 
 
@@ -6854,17 +7060,11 @@ bool RunSuperHubFactory(
 
             instanceId,
 
-            "SUPER HUB -> " +
-
             factoryName +
 
-            " FINE | TOTALI=" +
+            ": FINE - PRODUZIONI=" +
 
-            std::to_string(
-
-                totalProduced));
-
-
+            std::to_string(produced));
 
 
 
@@ -6874,13 +7074,9 @@ bool RunSuperHubFactory(
 
 
 
-
-
         return true;
 
     }
-
-
 
 
 
@@ -6892,27 +7088,19 @@ bool RunSuperHubFactory(
 
 
 
-
-
     AddLog(
 
         instanceId,
 
-        "SUPER HUB -> " +
-
         factoryName +
 
-        " FINE | NESSUNA PRODUZIONE");
-
-
+        ": FINE - NESSUNA PRODUZIONE");
 
 
 
     UpdateMasterDashboard(
 
         instanceId);
-
-
 
 
 
@@ -6944,13 +7132,7 @@ void RunActiveFactories(
 
         instanceId >= 10)
 
-    {
-
         return;
-
-    }
-
-
 
 
 
@@ -6960,13 +7142,9 @@ void RunActiveFactories(
 
 
 
-
-
     g_FactoryCycle[instanceId] =
 
         cycle;
-
-
 
 
 
@@ -6978,25 +7156,21 @@ void RunActiveFactories(
 
 
 
-
-
     AddLog(
 
         instanceId,
 
-        "SUPER HUB: INIZIO CICLO " +
+        "SUPER HUB: CICLO " +
 
-        std::to_string(
-
-            cycle));
-
-
+        std::to_string(cycle));
 
 
 
     // ========================================================
 
     // GRUPPO 1
+
+    // CICLI 1,4,7,10...
 
     // ========================================================
 
@@ -7018,16 +7192,6 @@ void RunActiveFactories(
 
 
 
-
-
-        // ====================================================
-
-        // CASEIFICIO
-
-        // ====================================================
-
-
-
         RunSuperHubFactory(
 
             instanceId,
@@ -7036,59 +7200,19 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("panna.png", "panna.png", 3),
 
-            "panna.png",
+            MakeRecipe("burro.png", "burro.png", 3),
 
-            "panna.png",
+            MakeRecipe("formaggio.png", "formaggio.png", 3),
 
-            3),
-
-
-
-            MakeRecipe(
-
-            "burro.png",
-
-            "burro.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "formaggio.png",
-
-            "formaggio.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "formaggio_capra.png",
-
-            "formaggio_capra.png",
-
-            3)
+            MakeRecipe("formaggio_capra.png", "formaggio_capra.png", 3)
 
             },
 
             "CASEIFICIO",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // FORNO DEL PANE
-
-        // ====================================================
 
 
 
@@ -7100,109 +7224,29 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("pane.png", "pane.png", 3),
 
-            "pane.png",
+            MakeRecipe("pane_mais.png", "pane_mais.png", 3),
 
-            "pane.png",
+            MakeRecipe("biscotto.png", "biscotto.png", 3),
 
-            3),
+            MakeRecipe("muffin_lampone.png", "muffin_lampone.png", 3),
 
+            MakeRecipe("muffin_mora.png", "muffin_mora.png", 3),
 
+            MakeRecipe("pizza.png", "pizza.png", 3),
 
-            MakeRecipe(
+            MakeRecipe("muffin_mirtillo.png", "muffin_mirtillo.png", 3),
 
-            "pane_mais.png",
+            MakeRecipe("pizza_piccante.png", "pizza_piccante.png", 3),
 
-            "pane_mais.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "biscotto.png",
-
-            "biscotto.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "muffin_lampone.png",
-
-            "muffin_lampone.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "muffin_mora.png",
-
-            "muffin_mora.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "pizza.png",
-
-            "pizza.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "muffin_mirtillo.png",
-
-            "muffin_mirtillo.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "pizza_piccante.png",
-
-            "pizza_piccante.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "pane_patate.png",
-
-            "pane_patate.png",
-
-            3)
+            MakeRecipe("pane_patate.png", "pane_patate.png", 3)
 
             },
 
-            "FORNO DEL PANE",
+            "FORNO PANE",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // FORNO DEI PASTICCI
-
-        // ====================================================
 
 
 
@@ -7214,99 +7258,27 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("torta_carote.png", "torta_carote.png", 3),
 
-            "torta_carote.png",
+            MakeRecipe("torta_panna.png", "torta_panna.png", 3),
 
-            "torta_carote.png",
+            MakeRecipe("torta_rossa.png", "torta_rossa.png", 3),
 
-            3),
+            MakeRecipe("cheesecake.png", "cheesecake.png", 3),
 
+            MakeRecipe("cheesecake_mirtillo.png", "cheesecake_mirtillo.png", 3),
 
+            MakeRecipe("torta_fragola.png", "torta_fragola.png", 3),
 
-            MakeRecipe(
+            MakeRecipe("torta_cioccolato.png", "torta_cioccolato.png", 3),
 
-            "torta_panna.png",
-
-            "torta_panna.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_rossa.png",
-
-            "torta_rossa.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "cheesecake.png",
-
-            "cheesecake.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "cheesecake_mirtillo.png",
-
-            "cheesecake_mirtillo.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_fragola.png",
-
-            "torta_fragola.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_cioccolato.png",
-
-            "torta_cioccolato.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_patate_feta.png",
-
-            "torta_patate_feta.png",
-
-            3)
+            MakeRecipe("torta_patate_feta.png", "torta_patate_feta.png", 3)
 
             },
 
-            "FORNO DEI PASTICCI",
+            "FORNO PASTICCI",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // ZUCCHERIFICIO
-
-        // ====================================================
 
 
 
@@ -7318,49 +7290,17 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("zucchero_bruno.png", "zucchero_bruno.png", 3),
 
-            "zucchero_bruno.png",
+            MakeRecipe("zucchero_bianco.png", "zucchero_bianco.png", 3),
 
-            "zucchero_bruno.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "zucchero_bianco.png",
-
-            "zucchero_bianco.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "sciroppo.png",
-
-            "sciroppo.png",
-
-            3)
+            MakeRecipe("sciroppo.png", "sciroppo.png", 3)
 
             },
 
             "ZUCCHERIFICIO",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // MANGIMIFICIO
-
-        // ====================================================
 
 
 
@@ -7372,69 +7312,21 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("mangime_galline.png", "mangime_galline.png", 3),
 
-            "mangime_galline.png",
+            MakeRecipe("mangime_mucche.png", "mangime_mucche.png", 3),
 
-            "mangime_galline.png",
+            MakeRecipe("mangime_maiali.png", "mangime_maiali.png", 3),
 
-            3),
+            MakeRecipe("mangime_pecore.png", "mangime_pecore.png", 3),
 
-
-
-            MakeRecipe(
-
-            "mangime_mucche.png",
-
-            "mangime_mucche.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "mangime_maiali.png",
-
-            "mangime_maiali.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "mangime_pecore.png",
-
-            "mangime_pecore.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "mangime_capre.png",
-
-            "mangime_capre.png",
-
-            3)
+            MakeRecipe("mangime_capre.png", "mangime_capre.png", 3)
 
             },
 
             "MANGIMIFICIO",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // SPREMITRICE
-
-        // ====================================================
 
 
 
@@ -7446,53 +7338,15 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("succo_carota.png", "succo_carota.png", 3),
 
-            "succo_carota.png",
+            MakeRecipe("succo_mela.png", "succo_mela.png", 3),
 
-            "succo_carota.png",
+            MakeRecipe("succo_ciliegia.png", "succo_ciliegia.png", 3),
 
-            3),
+            MakeRecipe("succo_pomodoro.png", "succo_pomodoro.png", 3),
 
-
-
-            MakeRecipe(
-
-            "succo_mela.png",
-
-            "succo_mela.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "succo_ciliegia.png",
-
-            "succo_ciliegia.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "succo_pomodoro.png",
-
-            "succo_pomodoro.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "succo_frutti_bosco.png",
-
-            "succo_frutti_bosco.png",
-
-            3)
+            MakeRecipe("succo_frutti_bosco.png", "succo_frutti_bosco.png", 3)
 
             },
 
@@ -7504,11 +7358,11 @@ void RunActiveFactories(
 
 
 
-
-
     // ========================================================
 
     // GRUPPO 2
+
+    // CICLI 2,5,8,11...
 
     // ========================================================
 
@@ -7530,16 +7384,6 @@ void RunActiveFactories(
 
 
 
-
-
-        // ====================================================
-
-        // BARBECUE
-
-        // ====================================================
-
-
-
         RunSuperHubFactory(
 
             instanceId,
@@ -7548,99 +7392,27 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("pancake.png", "pancake.png", 3),
 
-            "pancake.png",
+            MakeRecipe("uova_bacon.png", "uova_bacon.png", 3),
 
-            "pancake.png",
+            MakeRecipe("hamburger.png", "hamburger.png", 3),
 
-            3),
+            MakeRecipe("pomodoro_arrosto.png", "pomodoro_arrosto.png", 3),
 
+            MakeRecipe("patata_forno.png", "patata_forno.png", 3),
 
+            MakeRecipe("pane_aglio.png", "pane_aglio.png", 3),
 
-            MakeRecipe(
+            MakeRecipe("asparagi_grigliati.png", "asparagi_grigliati.png", 3),
 
-            "uova_bacon.png",
-
-            "uova_bacon.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "hamburger.png",
-
-            "hamburger.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "pomodoro_arrosto.png",
-
-            "pomodoro_arrosto.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "patata_forno.png",
-
-            "patata_forno.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "pane_aglio.png",
-
-            "pane_aglio.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "asparagi_grigliati.png",
-
-            "asparagi_grigliati.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "cipolla_grigliata.png",
-
-            "cipolla_grigliata.png",
-
-            3)
+            MakeRecipe("cipolla_grigliata.png", "cipolla_grigliata.png", 3)
 
             },
 
             "BARBECUE",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // GELATERIA
-
-        // ====================================================
 
 
 
@@ -7652,69 +7424,21 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("gelato_vaniglia.png", "gelato_vaniglia.png", 3),
 
-            "gelato_vaniglia.png",
+            MakeRecipe("gelato_ciliegia.png", "gelato_ciliegia.png", 3),
 
-            "gelato_vaniglia.png",
+            MakeRecipe("gelato_fragola.png", "gelato_fragola.png", 3),
 
-            3),
+            MakeRecipe("gelato_cioccolato.png", "gelato_cioccolato.png", 3),
 
-
-
-            MakeRecipe(
-
-            "gelato_ciliegia.png",
-
-            "gelato_ciliegia.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "gelato_fragola.png",
-
-            "gelato_fragola.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "gelato_cioccolato.png",
-
-            "gelato_cioccolato.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "gelato_sesamo.png",
-
-            "gelato_sesamo.png",
-
-            3)
+            MakeRecipe("gelato_sesamo.png", "gelato_sesamo.png", 3)
 
             },
 
             "GELATERIA",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // NEGOZIO DOLCI
-
-        // ====================================================
 
 
 
@@ -7726,39 +7450,15 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("torta_cioccolato.png", "torta_cioccolato.png", 3),
 
-            "torta_cioccolato.png",
-
-            "torta_cioccolato.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_limone.png",
-
-            "torta_limone.png",
-
-            3)
+            MakeRecipe("torta_limone.png", "torta_limone.png", 3)
 
             },
 
             "NEGOZIO DOLCI",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // MARMELLATE
-
-        // ====================================================
 
 
 
@@ -7770,69 +7470,21 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("marmellata_mela.png", "marmellata_mela.png", 3),
 
-            "marmellata_mela.png",
+            MakeRecipe("marmellata_lampone.png", "marmellata_lampone.png", 3),
 
-            "marmellata_mela.png",
+            MakeRecipe("marmellata_mora.png", "marmellata_mora.png", 3),
 
-            3),
+            MakeRecipe("marmellata_ciliegia.png", "marmellata_ciliegia.png", 3),
 
-
-
-            MakeRecipe(
-
-            "marmellata_lampone.png",
-
-            "marmellata_lampone.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "marmellata_mora.png",
-
-            "marmellata_mora.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "marmellata_ciliegia.png",
-
-            "marmellata_ciliegia.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "marmellata_fragola.png",
-
-            "marmellata_fragola.png",
-
-            3)
+            MakeRecipe("marmellata_fragola.png", "marmellata_fragola.png", 3)
 
             },
 
             "MARMELLATE",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // CUCITRICE
-
-        // ====================================================
 
 
 
@@ -7844,59 +7496,19 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("camicia_cotone.png", "camicia_cotone.png", 3),
 
-            "camicia_cotone.png",
+            MakeRecipe("pantaloni_lana.png", "pantaloni_lana.png", 3),
 
-            "camicia_cotone.png",
+            MakeRecipe("vestito_viola.png", "vestito_viola.png", 3),
 
-            3),
-
-
-
-            MakeRecipe(
-
-            "pantaloni_lana.png",
-
-            "pantaloni_lana.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "vestito_viola.png",
-
-            "vestito_viola.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "cuscino.png",
-
-            "cuscino.png",
-
-            3)
+            MakeRecipe("cuscino.png", "cuscino.png", 3)
 
             },
 
             "CUCITRICE",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // CAFFETTERIA
-
-        // ====================================================
 
 
 
@@ -7908,79 +7520,23 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("espresso.png", "espresso.png", 3),
 
-            "espresso.png",
+            MakeRecipe("caffe_latte.png", "caffe_latte.png", 3),
 
-            "espresso.png",
+            MakeRecipe("mocha.png", "mocha.png", 3),
 
-            3),
+            MakeRecipe("mocha_lampone.png", "mocha_lampone.png", 3),
 
+            MakeRecipe("cioccolata_calda.png", "cioccolata_calda.png", 3),
 
-
-            MakeRecipe(
-
-            "caffe_latte.png",
-
-            "caffe_latte.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "mocha.png",
-
-            "mocha.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "mocha_lampone.png",
-
-            "mocha_lampone.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "cioccolata_calda.png",
-
-            "cioccolata_calda.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "latte_caramello.png",
-
-            "latte_caramello.png",
-
-            3)
+            MakeRecipe("latte_caramello.png", "latte_caramello.png", 3)
 
             },
 
             "CAFFETTERIA",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // CARAMELLE
-
-        // ====================================================
 
 
 
@@ -7992,53 +7548,15 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("mela_caramellata.png", "mela_caramellata.png", 3),
 
-            "mela_caramellata.png",
+            MakeRecipe("toffee.png", "toffee.png", 3),
 
-            "mela_caramellata.png",
+            MakeRecipe("cioccolatini.png", "cioccolatini.png", 3),
 
-            3),
+            MakeRecipe("lecca_lecca.png", "lecca_lecca.png", 3),
 
-
-
-            MakeRecipe(
-
-            "toffee.png",
-
-            "toffee.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "cioccolatini.png",
-
-            "cioccolatini.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "lecca_lecca.png",
-
-            "lecca_lecca.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "jellybeans.png",
-
-            "jellybeans.png",
-
-            3)
+            MakeRecipe("jellybeans.png", "jellybeans.png", 3)
 
             },
 
@@ -8050,11 +7568,11 @@ void RunActiveFactories(
 
 
 
-
-
     // ========================================================
 
     // GRUPPO 3
+
+    // CICLI 3,6,9,12...
 
     // ========================================================
 
@@ -8076,16 +7594,6 @@ void RunActiveFactories(
 
 
 
-
-
-        // ====================================================
-
-        // IMPASTATRICE
-
-        // ====================================================
-
-
-
         RunSuperHubFactory(
 
             instanceId,
@@ -8094,39 +7602,15 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("pasta_fresca.png", "pasta_fresca.png", 3),
 
-            "pasta_fresca.png",
-
-            "pasta_fresca.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "noodles_riso.png",
-
-            "noodles_riso.png",
-
-            3)
+            MakeRecipe("noodles_riso.png", "noodles_riso.png", 3)
 
             },
 
             "IMPASTATRICE",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // PASTICCERIA
-
-        // ====================================================
 
 
 
@@ -8138,89 +7622,25 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("torta_carote.png", "torta_carote.png", 3),
 
-            "torta_carote.png",
+            MakeRecipe("torta_panna.png", "torta_panna.png", 3),
 
-            "torta_carote.png",
+            MakeRecipe("cheesecake.png", "cheesecake.png", 3),
 
-            3),
+            MakeRecipe("torta_fragola.png", "torta_fragola.png", 3),
 
+            MakeRecipe("torta_cioccolato.png", "torta_cioccolato.png", 3),
 
+            MakeRecipe("torta_ananas.png", "torta_ananas.png", 3),
 
-            MakeRecipe(
-
-            "torta_panna.png",
-
-            "torta_panna.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "cheesecake.png",
-
-            "cheesecake.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_fragola.png",
-
-            "torta_fragola.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_cioccolato.png",
-
-            "torta_cioccolato.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_ananas.png",
-
-            "torta_ananas.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "torta_limone.png",
-
-            "torta_limone.png",
-
-            3)
+            MakeRecipe("torta_limone.png", "torta_limone.png", 3)
 
             },
 
             "PASTICCERIA",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // TELAIO
-
-        // ====================================================
 
 
 
@@ -8232,79 +7652,23 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("maglione.png", "maglione.png", 3),
 
-            "maglione.png",
+            MakeRecipe("tessuto_cotone.png", "tessuto_cotone.png", 3),
 
-            "maglione.png",
+            MakeRecipe("cappello_lana.png", "cappello_lana.png", 3),
 
-            3),
+            MakeRecipe("maglione_blu.png", "maglione_blu.png", 3),
 
+            MakeRecipe("sciarpa_rossa.png", "sciarpa_rossa.png", 3),
 
-
-            MakeRecipe(
-
-            "tessuto_cotone.png",
-
-            "tessuto_cotone.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "cappello_lana.png",
-
-            "cappello_lana.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "maglione_blu.png",
-
-            "maglione_blu.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "sciarpa_rossa.png",
-
-            "sciarpa_rossa.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "scialle_fiori.png",
-
-            "scialle_fiori.png",
-
-            3)
+            MakeRecipe("scialle_fiori.png", "scialle_fiori.png", 3)
 
             },
 
             "TELAIO",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // ZUPPE
-
-        // ====================================================
 
 
 
@@ -8316,39 +7680,15 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("zuppa_pomodoro.png", "zuppa_pomodoro.png", 3),
 
-            "zuppa_pomodoro.png",
-
-            "zuppa_pomodoro.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "zuppa_pollo.png",
-
-            "zuppa_pollo.png",
-
-            3)
+            MakeRecipe("zuppa_pollo.png", "zuppa_pollo.png", 3)
 
             },
 
             "ZUPPE",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // SALSE
-
-        // ====================================================
 
 
 
@@ -8360,79 +7700,23 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
+            MakeRecipe("salsa_soia.png", "salsa_soia.png", 3),
 
-            "salsa_soia.png",
+            MakeRecipe("pasta_fagioli.png", "pasta_fagioli.png", 3),
 
-            "salsa_soia.png",
+            MakeRecipe("olio_oliva.png", "olio_oliva.png", 3),
 
-            3),
+            MakeRecipe("maionese.png", "maionese.png", 3),
 
+            MakeRecipe("curd_limone.png", "curd_limone.png", 3),
 
-
-            MakeRecipe(
-
-            "pasta_fagioli.png",
-
-            "pasta_fagioli.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "olio_oliva.png",
-
-            "olio_oliva.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "maionese.png",
-
-            "maionese.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "curd_limone.png",
-
-            "curd_limone.png",
-
-            3),
-
-
-
-            MakeRecipe(
-
-            "salsa_olive.png",
-
-            "salsa_olive.png",
-
-            3)
+            MakeRecipe("salsa_olive.png", "salsa_olive.png", 3)
 
             },
 
             "SALSE",
 
             g_SuperHubState[instanceId]);
-
-
-
-
-
-        // ====================================================
-
-        // PASTA KITCHEN
-
-        // ====================================================
 
 
 
@@ -8444,13 +7728,7 @@ void RunActiveFactories(
 
             {
 
-            MakeRecipe(
-
-            "gnocchi.png",
-
-            "gnocchi.png",
-
-            3)
+            MakeRecipe("gnocchi.png", "gnocchi.png", 3)
 
             },
 
@@ -8459,8 +7737,6 @@ void RunActiveFactories(
             g_SuperHubState[instanceId]);
 
     }
-
-
 
 
 
@@ -8478,11 +7754,7 @@ void RunActiveFactories(
 
         "SUPER HUB: FINE CICLO " +
 
-        std::to_string(
-
-            cycle));
-
-
+        std::to_string(cycle));
 
 
 
@@ -8516,29 +7788,17 @@ void RunActiveFactories(
 
         instanceId >= 10)
 
-    {
-
         return;
-
-    }
-
-
 
 
 
     int currentCycle =
 
-        g_FactoryCycle[instanceId];
+        (g_FactoryCycle[instanceId] > 0)
 
+        ? g_FactoryCycle[instanceId]
 
-
-
-
-    if (currentCycle <= 0)
-
-        currentCycle = 1;
-
-
+        : 1;
 
 
 
