@@ -84,7 +84,8 @@ button{font:inherit}
 
 <script>
 const tg=window.Telegram?.WebApp;
-if(tg){tg.ready();tg.expand();}
+const isTelegramWebApp=!!(tg && tg.initData && tg.initData.length>0);
+if(tg && isTelegramWebApp){tg.ready();tg.expand();}
 
 /* SERVER REALE */
 const API_BASE="https://apphay.onrender.com";
@@ -106,7 +107,20 @@ function fmt(s){
   let h=Math.floor(s/3600),m=Math.floor(s%3600/60),z=s%60;
   return h?`${h}:${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`;
 }
-function getInstance(id){return state.instances?.[String(id)]||null;}
+function getInstance(id){
+  const exact=state.instances?.[String(id)];
+  if(exact)return exact;
+
+  // Il motore usa spesso ID 0,1... mentre il pannello mostra Istanza 1,2...
+  const zeroBased=state.instances?.[String(Number(id)-1)];
+  if(zeroBased)return zeroBased;
+
+  const list=Object.values(state.instances||{});
+  return list.find(x =>
+    Number(x?.id)===Number(id) ||
+    Number(x?.id)===Number(id)-1
+  )||null;
+}
 function getFactories(inst){
   if(!inst)return {};
   let f=inst.factories;
@@ -247,15 +261,31 @@ function updateHeader(){
 }
 
 async function fetchState(){
+  // Fuori da una vera Mini App Telegram NON facciamo richieste di rete.
+  // Questo elimina i popup nell'anteprima di GitHub/ChatGPT.
+  if(!isTelegramWebApp){
+    updateHeader();
+    return;
+  }
+
   try{
-    const r=await fetch(STATE_URL+"?ts="+Date.now(),{cache:"no-store"});
+    const r=await fetch(STATE_URL+"?ts="+Date.now(),{
+      cache:"no-store",
+      credentials:"omit"
+    });
     if(!r.ok)throw new Error("HTTP "+r.status);
-    state=await r.json();
+
+    const data=await r.json();
+    if(!data || typeof data!=="object"){
+      throw new Error("Risposta Render non valida");
+    }
+
+    state=data;
     lastFetch=Date.now();
     lastError="";
     render();
   }catch(e){
-    lastError="Server Render non raggiungibile: "+e.message;
+    lastError="Render: "+e.message;
     updateHeader();
     if(page==="home")render();
   }
@@ -272,7 +302,7 @@ setInterval(()=>{
 lastFetch=Date.now();
 render();
 fetchState();
-setInterval(fetchState,1000);
+if(isTelegramWebApp) setInterval(fetchState,1000);
 </script>
 </body>
 </html>
