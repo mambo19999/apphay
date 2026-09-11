@@ -3,82 +3,80 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Hay Day Bot Control</title>
+<title>Hay Day Bot Control — LIVE</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{
- --bg:#f3f5f8;--card:#fff;--text:#172033;--muted:#738096;--line:#e4e8ee;
- --green:#29a36a;--orange:#e5a13a;--red:#d95f73;--blue:#5797d0;--purple:#8064c5;
- --shadow:0 8px 24px rgba(25,35,55,.07);
+  --bg:#f3f5f8;--card:#fff;--text:#172033;--muted:#738096;--line:#e4e8ee;
+  --green:#29a36a;--orange:#e5a13a;--red:#d95f73;--blue:#5797d0;--purple:#8064c5;
+  --shadow:0 8px 24px rgba(25,35,55,.07);
 }
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-button{font:inherit} .app{max-width:760px;margin:auto;padding:14px 13px 28px}
-.header{background:linear-gradient(135deg,#fff,#eef1ff);border:1px solid var(--line);
-border-radius:25px;padding:16px;box-shadow:var(--shadow)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button{font:inherit}
+.app{max-width:760px;margin:auto;padding:14px 13px 28px}
+.header{background:linear-gradient(135deg,#fff,#eef1ff);border:1px solid var(--line);border-radius:25px;padding:16px;box-shadow:var(--shadow)}
 .headrow{display:flex;justify-content:space-between;gap:12px;align-items:center}
-.brand{display:flex;align-items:center;gap:11px}.logo{width:51px;height:51px;border-radius:17px;
-display:grid;place-items:center;background:#e9ecff;font-size:27px}.title{font-size:20px;font-weight:900}
-.subtitle{font-size:11px;color:var(--muted);margin-top:3px}
+.brand{display:flex;align-items:center;gap:11px}.logo{width:51px;height:51px;border-radius:17px;display:grid;place-items:center;background:#e9ecff;font-size:27px}
+.title{font-size:20px;font-weight:900}.subtitle{font-size:11px;color:var(--muted);margin-top:3px}
 .live{font-size:10px;font-weight:900;color:var(--green);background:#e9f8f0;padding:8px 10px;border-radius:999px;white-space:nowrap}
-.live i{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:5px}
+.live.offline{color:var(--red);background:#fdecef}.live i{display:inline-block;width:7px;height:7px;background:currentColor;border-radius:50%;margin-right:5px}
 .instances{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}
 .instance{border:1px solid var(--line);background:#fff;border-radius:16px;padding:11px;text-align:left;cursor:pointer}
 .instance.active{background:#eef0ff;border-color:#bfc7fa}.instname{font-size:12px;font-weight:900}
-.inststatus{font-size:10px;color:var(--green);margin-top:4px}.instaction{font-size:9px;color:var(--muted);margin-top:2px}
+.inststatus{font-size:10px;color:var(--green);margin-top:4px}.inststatus.offline{color:var(--red)}
+.instaction{font-size:9px;color:var(--muted);margin-top:2px}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px}.stat b{font-size:17px;display:block}
-.stat span{font-size:9px;color:var(--muted)}
-.nav{display:flex;gap:6px;overflow:auto;padding:12px 1px 8px}.nav button{border:1px solid var(--line);
-background:transparent;border-radius:12px;padding:9px 12px;white-space:nowrap;font-size:11px;font-weight:800;color:var(--muted);cursor:pointer}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px}.stat b{font-size:17px;display:block}.stat span{font-size:9px;color:var(--muted)}
+.nav{display:flex;gap:6px;overflow:auto;padding:12px 1px 8px}.nav button{border:1px solid var(--line);background:transparent;border-radius:12px;padding:9px 12px;white-space:nowrap;font-size:11px;font-weight:800;color:var(--muted);cursor:pointer}
 .nav button.active{background:#e9ecff;color:var(--text);border-color:#bfc7fa}
 .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:13px;box-shadow:var(--shadow);margin-top:9px}
 .cardhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.cardhead h2{font-size:13px;margin:0;font-weight:900}
-.small{font-size:9px;color:var(--muted)} .grid{display:grid;grid-template-columns:1.25fr .9fr;gap:9px}
-.factorygrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.factory{border:1px solid var(--line);background:#fbfcfd;border-radius:14px;padding:9px;text-align:left;cursor:pointer}
+.small{font-size:9px;color:var(--muted)}.factorygrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.factory{border:1px solid var(--line);background:#fbfcfd;border-radius:14px;padding:9px;text-align:left}
 .ftop{display:flex;justify-content:space-between}.fname{font-size:10px;font-weight:900}.fstate{font-size:9px;color:var(--green);margin-top:4px}
-.progress{height:5px;background:#e9edf2;border-radius:8px;overflow:hidden;margin-top:7px}.progress span{display:block;height:100%;border-radius:8px;background:var(--green)}
-.animal{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;background:#fbfcfd;border:1px solid var(--line);
-border-radius:14px;padding:8px;margin-bottom:7px}.animal:last-child{margin-bottom:0}.aicon{width:38px;height:38px;border-radius:12px;background:#f1f3f6;display:grid;place-items:center;font-size:20px}
+.fstate.wait{color:var(--orange)}.fstate.err{color:var(--red)}
+.progress{height:5px;background:#e9edf2;border-radius:8px;overflow:hidden;margin-top:7px}.progress span{display:block;height:100%;border-radius:8px;background:var(--green);width:35%;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+.animal{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:8px;background:#fbfcfd;border:1px solid var(--line);border-radius:14px;padding:8px;margin-bottom:7px}
+.animal:last-child{margin-bottom:0}.aicon{width:38px;height:38px;border-radius:12px;background:#f1f3f6;display:grid;place-items:center;font-size:20px}
 .aname{font-size:10px;font-weight:900}.timer{font-size:11px;font-weight:900;font-variant-numeric:tabular-nums}
 .flow{display:flex;gap:6px;overflow:auto}.flowitem{min-width:75px;text-align:center;background:#fbfcfd;border:1px solid var(--line);border-radius:14px;padding:8px}
 .flowitem strong{display:block;font-size:17px}.flowitem span{font-size:9px;font-weight:800}.arrow{align-self:center;color:var(--muted)}
-.event{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);font-size:10px}.event:last-child{border-bottom:0}
-.eicon{font-size:16px}.event small{display:block;color:var(--muted);margin-top:2px}
-.actions{display:flex;flex-wrap:wrap;gap:7px}.action{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 11px;font-size:10px;font-weight:900;cursor:pointer}
-.action.primary{background:#e9ecff;border-color:#c2c9fa}.toast{min-height:17px;margin-top:8px;font-size:10px;color:var(--muted)}
+.event{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);font-size:10px}.event:last-child{border-bottom:0}.eicon{font-size:16px}.event small{display:block;color:var(--muted);margin-top:2px}
 .detailgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.detail{background:#fbfcfd;border:1px solid var(--line);border-radius:14px;padding:11px}.detail b{display:block;font-size:15px}.detail span{font-size:9px;color:var(--muted)}
+.notice{background:#fff8e8;border:1px solid #f2dfb2;border-radius:14px;padding:10px;font-size:10px;color:#80621e;margin-top:9px}
+.error{background:#fdecef;border:1px solid #f2c8d0;border-radius:14px;padding:10px;font-size:10px;color:#8d3041;margin-top:9px}
 .hidden{display:none}
-@media(max-width:560px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.app{padding:10px 9px 22px}}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.app{padding:10px 9px 22px}}
 </style>
 </head>
 <body>
 <div class="app" id="app">
 <section class="header">
- <div class="headrow">
-  <div class="brand"><div class="logo">🚜</div><div><div class="title">Hay Day Bot</div><div class="subtitle">Control Center • monitoraggio live</div></div></div>
-  <div class="live"><i></i>ONLINE</div>
- </div>
- <div class="instances">
-  <button class="instance active" data-instance="1"><div class="instname">🟢 Istanza 1</div><div class="inststatus">Bot online</div><div class="instaction">Fabbriche in esecuzione</div></button>
-  <button class="instance" data-instance="2"><div class="instname">🟢 Istanza 2</div><div class="inststatus">Bot online</div><div class="instaction">Animali in gestione</div></button>
- </div>
- <div class="stats">
-  <div class="stat"><b id="active">8</b><span>Attive</span></div>
-  <div class="stat"><b id="ready">4</b><span>Pronte</span></div>
-  <div class="stat"><b>3</b><span>Animali</span></div>
-  <div class="stat"><b id="sync">0s</b><span>Sync</span></div>
- </div>
+  <div class="headrow">
+    <div class="brand"><div class="logo">🚜</div><div><div class="title">Hay Day Bot</div><div class="subtitle">Control Center • monitoraggio live</div></div></div>
+    <div class="live offline" id="live"><i></i>CONNESSIONE...</div>
+  </div>
+  <div class="instances">
+    <button class="instance active" data-instance="1"><div class="instname">🟢 Istanza 1</div><div class="inststatus" id="inststatus1">In attesa dati</div><div class="instaction" id="instaction1">—</div></button>
+    <button class="instance" data-instance="2"><div class="instname">🟢 Istanza 2</div><div class="inststatus" id="inststatus2">In attesa dati</div><div class="instaction" id="instaction2">—</div></button>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="active">0</b><span>Fabbriche attive</span></div>
+    <div class="stat"><b id="ready">0</b><span>Pronte</span></div>
+    <div class="stat"><b id="animalsCount">3</b><span>Animali</span></div>
+    <div class="stat"><b id="sync">—</b><span>Ultimo sync</span></div>
+  </div>
 </section>
 
 <nav class="nav">
- <button class="active" data-page="home">🏠 Home</button>
- <button data-page="factories">🏭 Fabbriche</button>
- <button data-page="animals">🐾 Animali</button>
- <button data-page="fishing">🎣 Pesca</button>
- <button data-page="feed">🌾 Mangimi</button>
- <button data-page="logs">📜 Log</button>
+  <button class="active" data-page="home">🏠 Home</button>
+  <button data-page="factories">🏭 Fabbriche</button>
+  <button data-page="animals">🐾 Animali</button>
+  <button data-page="fishing">🎣 Pesca</button>
+  <button data-page="feed">🌾 Mangimi</button>
+  <button data-page="logs">📜 Log</button>
 </nav>
 
 <main id="content"></main>
@@ -88,46 +86,193 @@ border-radius:14px;padding:8px;margin-bottom:7px}.animal:last-child{margin-botto
 const tg=window.Telegram?.WebApp;
 if(tg){tg.ready();tg.expand();}
 
-let selected=1, page="home", lastSync=0;
-const data={
-1:{factories:[["☕","Bar","Caffè",68],["🥛","Caseificio","Panna",86],["🍞","Forno","Pane",42],["🍝","Impastatrice","Pasta",76],["🍨","Gelateria","Gelato",55],["🍬","Negozio dolci","Caramello",31],["🍚","Zuccherificio","Zucchero",91],["🫒","Salsificio","Olio",63],["🍣","Sushi Bar","Sushi",48],["🪢","Retificio","Reti",20],["🌾","Mangimificio 1","Cibo",72],["🌾","Mangimificio 2","Cibo",54]],animals:[487,1641,6742]},
-2:{factories:[["☕","Bar","Caffè",34],["🥛","Caseificio","Panna",61],["🍞","Forno","Pane",88],["🍝","Impastatrice","Pasta",29],["🍨","Gelateria","Gelato",74],["🍬","Negozio dolci","Caramello",52],["🍚","Zuccherificio","Zucchero",45],["🫒","Salsificio","Olio",79],["🍣","Sushi Bar","Sushi",63],["🪢","Retificio","Reti",38],["🌾","Mangimificio 1","Cibo",41],["🌾","Mangimificio 2","Cibo",82]],animals:[302,1217,6581]}
-};
-const names=["Galline","Mucche","Maiali"], icons=["🐔","🐄","🐖"];
+/* SERVER REALE */
+const API_BASE="https://apphay.onrender.com";
+const STATE_URL=API_BASE+"/api/state";
 
-function fmt(s){s=Math.max(0,Math.floor(s));let h=Math.floor(s/3600),m=Math.floor(s%3600/60),z=s%60;return h?`${h}:${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`}
+let selected=1,page="home",state={updated_at:0,instances:{}},lastFetch=0,lastError="";
+const factoryInfo={
+  bar:["☕","Bar","Caffè"],caseificio:["🥛","Caseificio","Panna"],forno:["🍞","Forno","Pane"],
+  pasta:["🍝","Impastatrice","Pasta"],gelateria:["🍨","Gelateria","Gelato"],negoziodolci:["🍬","Negozio dolci","Caramello"],
+  zuccherificio:["🍚","Zuccherificio","Zucchero"],salsificio:["🫒","Salsificio","Olio"],sushibar:["🍣","Sushi Bar","Sushi"],
+  retificio:["🪢","Retificio","Reti"],barbecue:["🥓","Barbecue","Produzione"],pasticci:["🥧","Pasticci","Produzione"],
+  pasticceria:["🍰","Pasticceria","Produzione"]
+};
+const names=["Galline","Mucche","Maiali"],icons=["🐔","🐄","🐖"];
+
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));}
+function fmt(s){
+  s=Math.max(0,Math.floor(Number(s)||0));
+  let h=Math.floor(s/3600),m=Math.floor(s%3600/60),z=s%60;
+  return h?`${h}:${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(z).padStart(2,"0")}`;
+}
+function getInstance(id){return state.instances?.[String(id)]||null;}
+function getFactories(inst){
+  if(!inst)return {};
+  let f=inst.factories;
+  if(typeof f==="string"){try{f=JSON.parse(f)}catch(e){f={};}}
+  return f&&typeof f==="object"?f:{};
+}
+function getAnimals(inst){
+  if(!inst)return {};
+  let a=inst.animals;
+  if(typeof a==="string"){try{a=JSON.parse(a)}catch(e){a={};}}
+  return a&&typeof a==="object"?a:{};
+}
+function isFresh(inst){
+  if(!inst)return false;
+  const t=Number(inst.last_seen||0);
+  return t>0 && (Date.now()/1000-t)<20;
+}
+function factoryStateText(v){
+  v=String(v||"💤 In attesa");
+  if(/errore|error|fallit|❌/i.test(v))return "err";
+  if(/attesa|attend|vuot|💤/i.test(v))return "wait";
+  return "";
+}
 
 function home(){
- const d=data[selected];
- return `<div class="grid"><section class="card"><div class="cardhead"><h2>🏭 Produzione — Istanza ${selected}</h2><span class="small">LIVE</span></div><div class="factorygrid">${d.factories.map((f,i)=>`<button class="factory" data-f="${i}"><div class="ftop"><span class="fname">${f[0]} ${f[1]}</span><span>›</span></div><div class="fstate">🟢 ${f[2]} • ${f[3]}%</div><div class="progress"><span style="width:${f[3]}%"></span></div></button>`).join("")}</div></section>
- <section class="card"><div class="cardhead"><h2>🐾 Timer animali</h2><span class="small">ISTANZA ${selected}</span></div>${d.animals.map((s,i)=>`<div class="animal"><div class="aicon">${icons[i]}</div><div><div class="aname">${names[i]}</div><div class="progress"><span style="width:${Math.max(4,100-s/72)}%;background:var(--orange)"></span></div></div><span class="timer" data-sec="${s}">${fmt(s)}</span></div>`).join("")}</section></div>
- <section class="card"><div class="cardhead"><h2>🔄 Ciclo operativo</h2><span class="small">ISTANZA ${selected}</span></div><div class="flow"><div class="flowitem"><strong>🏭</strong><span>Fabbriche</span></div><div class="arrow">→</div><div class="flowitem"><strong>🐾</strong><span>Animali</span></div><div class="arrow">→</div><div class="flowitem"><strong>🎣</strong><span>Pesca</span></div><div class="arrow">→</div><div class="flowitem"><strong>🪢</strong><span>Retificio</span></div><div class="arrow">→</div><div class="flowitem"><strong>🌾</strong><span>Mangimi</span></div></div></section>
- <section class="card"><div class="cardhead"><h2>⚡ Attività recenti</h2><span class="small">LIVE</span></div>${events()}</section>
- <section class="card"><div class="cardhead"><h2>🎮 Controlli</h2><span class="small">ISTANZA ${selected}</span></div><div class="actions"><button class="action primary" data-cmd="sync">🔄 Sincronizza</button><button class="action" data-cmd="pause">⏸ Pausa</button><button class="action" data-cmd="resume">▶️ Riprendi</button><button class="action" data-cmd="restart">♻️ Riavvia ciclo</button></div><div class="toast" id="toast"></div></section>`;
+  const inst=getInstance(selected), f=getFactories(inst), a=getAnimals(inst);
+  return `
+  <section class="card">
+    <div class="cardhead"><h2>🏭 Produzione — Istanza ${selected}</h2><span class="small">${isFresh(inst)?"LIVE":"OFFLINE"}</span></div>
+    <div class="factorygrid">${factoryCards(f)}</div>
+  </section>
+  <section class="card">
+    <div class="cardhead"><h2>🐾 Timer animali</h2><span class="small">ISTANZA ${selected}</span></div>
+    ${animalCards(a)}
+  </section>
+  <section class="card">
+    <div class="cardhead"><h2>🔄 Ciclo operativo</h2><span class="small">ISTANZA ${selected}</span></div>
+    <div class="flow">
+      <div class="flowitem"><strong>🏭</strong><span>Fabbriche</span></div><div class="arrow">→</div>
+      <div class="flowitem"><strong>🐾</strong><span>Animali</span></div><div class="arrow">→</div>
+      <div class="flowitem"><strong>🎣</strong><span>Pesca</span></div><div class="arrow">→</div>
+      <div class="flowitem"><strong>🪢</strong><span>Retificio</span></div><div class="arrow">→</div>
+      <div class="flowitem"><strong>🌾</strong><span>Mangimi</span></div>
+    </div>
+  </section>
+  <section class="card">
+    <div class="cardhead"><h2>⚡ Attività live</h2><span class="small">DAL BOT</span></div>
+    ${events(inst,f)}
+  </section>
+  ${lastError?`<div class="error">⚠️ ${esc(lastError)}</div>`:""}
+  <div class="notice">ℹ️ I dati mostrati qui arrivano dal server Render e vengono aggiornati automaticamente. I pulsanti di comando non sono ancora collegati al motore C++.</div>`;
 }
-function events(){return `<div class="event"><span class="eicon">☕</span><div><b>Bar</b> — Caffè avviato<small>adesso • Istanza ${selected}</small></div></div><div class="event"><span class="eicon">🐔</span><div><b>Galline</b> — Alimentazione completata<small>1 min fa</small></div></div><div class="event"><span class="eicon">🎣</span><div><b>Pesca</b> — Trascinamento completato<small>2 min fa</small></div></div><div class="event"><span class="eicon">🪢</span><div><b>Retificio</b> — Reti avviate<small>3 min fa</small></div></div>`}
+
+function factoryCards(f){
+  const keys=Object.keys(factoryInfo);
+  return keys.map(k=>{
+    const meta=factoryInfo[k], value=f[k]??"💤 In attesa", cls=factoryStateText(value);
+    return `<div class="factory"><div class="ftop"><span class="fname">${meta[0]} ${meta[1]}</span><span>›</span></div>
+      <div class="fstate ${cls}">${esc(value)}</div>
+      <div class="progress"><span></span></div></div>`;
+  }).join("");
+}
+
+function animalCards(a){
+  const keys=["galline","mucche","maiali"];
+  return keys.map((k,i)=>{
+    const sec=Math.max(0,Number(a[k])||0);
+    return `<div class="animal"><div class="aicon">${icons[i]}</div><div><div class="aname">${names[i]}</div>
+      <div class="progress"><span style="width:${sec?Math.max(5,Math.min(100,100-sec/(i===0?600:i===1?1800:7200)*100)):100}%"></span></div></div>
+      <span class="timer" data-sec="${sec}">${sec?fmt(sec):"PRONTO"}</span></div>`;
+  }).join("");
+}
+
+function events(inst,f){
+  if(!inst)return `<div class="event"><span class="eicon">⏳</span><div><b>Nessun dato</b><small>Avvia il bot C++ per ricevere gli aggiornamenti.</small></div></div>`;
+  let out=`<div class="event"><span class="eicon">🤖</span><div><b>${esc(inst.name||"Istanza "+selected)}</b> — ${esc(inst.status||"ONLINE")}<small>${esc(inst.current_action||"Nessuna azione")}</small></div></div>`;
+  const interesting=["sushibar","retificio","bar","caseificio","forno","pasta"];
+  interesting.forEach(k=>{
+    if(f[k] && !/attesa/i.test(String(f[k])))out+=`<div class="event"><span class="eicon">${factoryInfo[k][0]}</span><div><b>${esc(factoryInfo[k][1])}</b> — ${esc(f[k])}<small>Stato ricevuto dal bot</small></div></div>`;
+  });
+  if(inst.visitors)out+=`<div class="event"><span class="eicon">🚶</span><div><b>Visitatori</b> — ${esc(inst.visitors)}<small>Stato ricevuto dal bot</small></div></div>`;
+  return out;
+}
 
 function secondary(){
- const titles={factories:"🏭 Tutte le fabbriche",animals:"🐾 Animali e timer",fishing:"🎣 Pesca + Retificio",feed:"🌾 Mangimifici",logs:"📜 Registro operativo"};
- if(page==="factories")return `<section class="card"><div class="cardhead"><h2>${titles[page]} — Istanza ${selected}</h2><span class="live">LIVE</span></div><div class="factorygrid">${data[selected].factories.map(f=>`<div class="factory"><div class="fname">${f[0]} ${f[1]}</div><div class="fstate">🟢 ${f[2]} • ${f[3]}%</div><div class="progress"><span style="width:${f[3]}%"></span></div></div>`).join("")}</div></section>`;
- let extra=page==="animals"?`Galline 10 minuti • Mucche 30 minuti • Maiali 2 ore`:
- page==="fishing"?`🎣 Pesca → controllo X → 🪢 Retificio → 🏠 casa.png`:
- page==="feed"?`🌾 Mangimificio 1 + Mangimificio 2 • gallina • mucca • maiale`:
-`Ogni operazione del bot verrà registrata qui con ora, istanza, azione, risultato ed eventuale errore.`;
- return `<section class="card"><div class="cardhead"><h2>${titles[page]} — Istanza ${selected}</h2><span class="small">DATI REALI IN ARRIVO</span></div><div class="detailgrid"><div class="detail"><b>🟢 ONLINE</b><span>Stato bot</span></div><div class="detail"><b>${selected}</b><span>Istanza selezionata</span></div><div class="detail"><b>LIVE</b><span>Connessione</span></div><div class="detail"><b>00:00</b><span>Ultima azione</span></div></div><p class="subtitle">${extra}</p></section>`;
+  const inst=getInstance(selected), f=getFactories(inst), a=getAnimals(inst);
+  const titles={factories:"🏭 Tutte le fabbriche",animals:"🐾 Animali e timer",fishing:"🎣 Pesca + Retificio",feed:"🌾 Mangimifici",logs:"📜 Registro operativo"};
+  if(page==="factories")return `<section class="card"><div class="cardhead"><h2>${titles[page]} — Istanza ${selected}</h2><span class="small">${isFresh(inst)?"LIVE":"OFFLINE"}</span></div><div class="factorygrid">${factoryCards(f)}</div></section>`;
+  if(page==="animals")return `<section class="card"><div class="cardhead"><h2>${titles[page]} — Istanza ${selected}</h2><span class="small">LIVE</span></div>${animalCards(a)}<p class="subtitle">Timer gestiti dal motore: galline 10 minuti • mucche 30 minuti • maiali 2 ore.</p></section>`;
+  if(page==="fishing")return `<section class="card"><div class="cardhead"><h2>${titles[page]} — Istanza ${selected}</h2><span class="small">DAL BOT</span></div>
+    <div class="detailgrid"><div class="detail"><b>🎣 ${esc(inst?.sushibar||"—")}</b><span>Sushi Bar</span></div>
+    <div class="detail"><b>🪢 ${esc(inst?.retificio||"—")}</b><span>Retificio</span></div></div>
+    <p class="subtitle">Sequenza monitorata: Sushi → pesca → controllo X → Retificio → ritorno a casa.</p></section>`;
+  if(page==="feed")return `<section class="card"><div class="cardhead"><h2>${titles[page]} — Istanza ${selected}</h2><span class="small">DAL BOT</span></div>
+    <div class="detailgrid"><div class="detail"><b>🌾 Mangimificio 1</b><span>Produzione gestita dal motore</span></div><div class="detail"><b>🌾 Mangimificio 2</b><span>Produzione gestita dal motore</span></div></div>
+    <p class="subtitle">Il monitor visualizza lo stato ricevuto dal bot; i comandi non sono ancora inviati dalla Mini App.</p></section>`;
+  return `<section class="card"><div class="cardhead"><h2>${titles[page]} — Istanza ${selected}</h2><span class="small">LIVE</span></div>${events(inst,f)}</section>`;
 }
 
-function render(){document.getElementById("content").innerHTML=page==="home"?home():secondary();document.getElementById("sync").textContent=lastSync?Math.floor((Date.now()-lastSync)/1000)+"s":"0s";bind();}
+function render(){
+  document.getElementById("content").innerHTML=page==="home"?home():secondary();
+  bind();
+  updateHeader();
+}
 
 function bind(){
- document.querySelectorAll(".instance").forEach(b=>b.onclick=()=>{selected=Number(b.dataset.instance);document.querySelectorAll(".instance").forEach(x=>x.classList.remove("active"));b.classList.add("active");render()});
- document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{page=b.dataset.page;document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");render()});
- document.querySelectorAll(".factory").forEach(b=>b.onclick=()=>{const f=data[selected].factories[Number(b.dataset.f)];const t=document.getElementById("toast");if(t)t.textContent=`Istanza ${selected} • ${f[1]} • ${f[2]} • ${f[3]}%`});
- document.querySelectorAll("[data-cmd]").forEach(b=>b.onclick=()=>{const t=document.getElementById("toast");if(!t)return;const c=b.dataset.cmd;t.textContent=c==="sync"?"✓ Sincronizzazione richiesta":c==="pause"?`⏸ Pausa richiesta — Istanza ${selected}`:c==="resume"?`▶️ Ripresa richiesta — Istanza ${selected}`:`♻️ Riavvio ciclo richiesto — Istanza ${selected}`});
+  document.querySelectorAll(".instance").forEach(b=>b.onclick=()=>{
+    selected=Number(b.dataset.instance);
+    document.querySelectorAll(".instance").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    render();
+  });
+  document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
+    page=b.dataset.page;
+    document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    render();
+  });
 }
 
-setInterval(()=>{document.querySelectorAll(".timer").forEach(e=>{let s=Math.max(0,Number(e.dataset.sec)-1);e.dataset.sec=s;e.textContent=fmt(s)});lastSync=lastSync||Date.now();document.getElementById("sync").textContent=Math.floor((Date.now()-lastSync)/1000)+"s"},1000);
-lastSync=Date.now();render();
+function updateHeader(){
+  const live=document.getElementById("live");
+  const inst=getInstance(selected);
+  const online=isFresh(inst);
+  live.className="live"+(online?"":" offline");
+  live.innerHTML=`<i></i>${online?"ONLINE":"OFFLINE"}`;
+  [1,2].forEach(id=>{
+    const x=getInstance(id), fresh=isFresh(x);
+    const s=document.getElementById("inststatus"+id), ac=document.getElementById("instaction"+id);
+    s.textContent=fresh?(x.status||"Bot online"):"Nessun dato recente";
+    s.className="inststatus"+(fresh?"":" offline");
+    ac.textContent=fresh?(x.current_action||"Nessuna azione"):"—";
+  });
+  const f=getFactories(inst), vals=Object.values(f);
+  document.getElementById("active").textContent=vals.filter(v=>v && !/attesa/i.test(String(v))).length;
+  document.getElementById("ready").textContent=vals.filter(v=>/pront|ready|finito/i.test(String(v))).length;
+  document.getElementById("sync").textContent=lastFetch?Math.max(0,Math.floor((Date.now()-lastFetch)/1000))+"s":"—";
+}
+
+async function fetchState(){
+  try{
+    const r=await fetch(STATE_URL+"?ts="+Date.now(),{cache:"no-store"});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    state=await r.json();
+    lastFetch=Date.now();
+    lastError="";
+    render();
+  }catch(e){
+    lastError="Server Render non raggiungibile: "+e.message;
+    updateHeader();
+    if(page==="home")render();
+  }
+}
+
+setInterval(()=>{
+  document.querySelectorAll(".timer").forEach(e=>{
+    let s=Math.max(0,Number(e.dataset.sec)-1);
+    e.dataset.sec=s;e.textContent=s?fmt(s):"PRONTO";
+  });
+  updateHeader();
+},1000);
+
+lastFetch=Date.now();
+render();
+fetchState();
+setInterval(fetchState,1000);
 </script>
 </body>
 </html>
